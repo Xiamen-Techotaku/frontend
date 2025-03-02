@@ -7,8 +7,11 @@
                     <v-btn color="primary" @click="$router.push('/collect')" class="mr-2">
                         1688採集上架
                     </v-btn>
-                    <v-btn color="secondary" @click="$router.push('/productCreate')">
+                    <v-btn color="secondary" @click="$router.push('/productCreate')" class="mr-2">
                         手動採集上架
+                    </v-btn>
+                    <v-btn color="warning" @click="$router.push('/CategoryEdit')">
+                        類別編輯
                     </v-btn>
                 </v-col>
                 <v-col cols="12" md="6" class="text-right">
@@ -49,7 +52,6 @@
                                     hide-details
                                     dense
                                 />
-
                                 <v-btn
                                     color="success"
                                     small
@@ -103,7 +105,7 @@ export default {
     },
     computed: {
         groupedOrders() {
-            // 純粹將 orders 依據 order_status 分組，不做任何狀態初始化
+            // 將 orders 依據 order_status 分組
             return this.orders.reduce((groups, order) => {
                 const status = order.order_status || "unknown";
                 if (!groups[status]) groups[status] = [];
@@ -136,9 +138,8 @@ export default {
                 });
                 if (response.data && response.data.orders) {
                     this.orders = response.data.orders;
-                    // 初始化 statusSelections，不使用 this.$set，直接賦值即可
+                    // 初始化 statusSelections
                     this.orders.forEach((order) => {
-                        // 若尚未有對應值則初始化
                         if (!this.statusSelections[order.id]) {
                             this.statusSelections[order.id] = order.order_status || "pending";
                         }

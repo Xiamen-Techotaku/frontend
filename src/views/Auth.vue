@@ -101,8 +101,8 @@ export default {
                     { withCredentials: true }
                 );
                 alert("登入成功");
-                console.log("登入成功：", response.data);
-                this.$router.push("/");
+                // 重新整理頁面讓 App 元件重新 fetch currentUser
+                window.location.reload();
             } catch (error) {
                 console.error("登入失敗：", error);
                 alert(

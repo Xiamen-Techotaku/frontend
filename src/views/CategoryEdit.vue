@@ -1,85 +1,125 @@
 <template>
-    <div class="category-edit">
-        <h1>分類管理</h1>
-        <!-- 分類列表 -->
-        <div class="category-list">
-            <h2>分類列表</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>分類名稱</th>
-                        <th>描述</th>
-                        <th>上層分類</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr v-for="category in categories" :key="category.id">
-                        <td>{{ category.id }}</td>
-                        <td>{{ category.name }}</td>
-                        <td>{{ category.description }}</td>
-                        <td>{{ getParentName(category.parent_id) }}</td>
-                        <td>
-                            <button @click="editCategoryItem(category)">編輯</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+    <v-app>
+        <v-container>
+            <!-- 返回按鈕 -->
+            <v-row>
+                <v-col cols="12">
+                    <v-btn color="primary" @click="$router.go(-1)" class="mb-4"> 返回 </v-btn>
+                </v-col>
+            </v-row>
 
-        <!-- 編輯分類表單 (當正在編輯時顯示) -->
-        <div class="edit-form" v-if="editing">
-            <h2>編輯分類</h2>
-            <form @submit.prevent="updateCategory">
-                <div class="form-group">
-                    <label for="edit-name">分類名稱:</label>
-                    <input type="text" id="edit-name" v-model="editCategory.name" required />
-                </div>
-                <div class="form-group">
-                    <label for="edit-description">描述:</label>
-                    <textarea id="edit-description" v-model="editCategory.description"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="edit-parent">上層分類:</label>
-                    <select id="edit-parent" v-model="editCategory.parent_id">
-                        <option value="">無上層分類</option>
-                        <!-- 這裡排除正在編輯的分類本身 -->
-                        <option v-for="cat in parentOptions" :key="cat.id" :value="cat.id">
-                            {{ cat.name }}
-                        </option>
-                    </select>
-                </div>
-                <button type="submit">儲存修改</button>
-                <button type="button" @click="cancelEdit">取消</button>
-            </form>
-        </div>
+            <!-- 分類管理標題 -->
+            <v-row>
+                <v-col cols="12">
+                    <h1 class="text-center">分類管理</h1>
+                </v-col>
+            </v-row>
 
-        <!-- 新增分類表單 -->
-        <div class="add-form">
-            <h2>新增分類</h2>
-            <form @submit.prevent="addCategory">
-                <div class="form-group">
-                    <label for="new-name">分類名稱:</label>
-                    <input type="text" id="new-name" v-model="newCategory.name" required />
-                </div>
-                <div class="form-group">
-                    <label for="new-description">描述:</label>
-                    <textarea id="new-description" v-model="newCategory.description"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="new-parent">上層分類:</label>
-                    <select id="new-parent" v-model="newCategory.parent_id">
-                        <option value="">無上層分類</option>
-                        <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                            {{ cat.name }}
-                        </option>
-                    </select>
-                </div>
-                <button type="submit">新增分類</button>
-            </form>
-        </div>
-    </div>
+            <!-- 分類列表 -->
+            <v-row>
+                <v-col cols="12">
+                    <v-card outlined>
+                        <v-card-title>分類列表</v-card-title>
+                        <v-card-text>
+                            <v-simple-table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>分類名稱</th>
+                                        <th>描述</th>
+                                        <th>上層分類</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="category in categories" :key="category.id">
+                                        <td>{{ category.id }}</td>
+                                        <td>{{ category.name }}</td>
+                                        <td>{{ category.description }}</td>
+                                        <td>{{ getParentName(category.parent_id) }}</td>
+                                        <td>
+                                            <v-btn
+                                                color="secondary"
+                                                small
+                                                @click="editCategoryItem(category)"
+                                            >
+                                                編輯
+                                            </v-btn>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </v-simple-table>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
+
+            <!-- 編輯分類表單 (僅在編輯模式時顯示) -->
+            <v-row v-if="editing" class="mt-4">
+                <v-col cols="12">
+                    <v-card outlined>
+                        <v-card-title>編輯分類</v-card-title>
+                        <v-card-text>
+                            <v-form @submit.prevent="updateCategory">
+                                <v-text-field
+                                    label="分類名稱"
+                                    v-model="editCategory.name"
+                                    required
+                                ></v-text-field>
+                                <v-textarea
+                                    label="描述"
+                                    v-model="editCategory.description"
+                                ></v-textarea>
+                                <v-select
+                                    label="上層分類"
+                                    :items="parentOptions"
+                                    v-model="editCategory.parent_id"
+                                    item-title="name"
+                                    item-value="id"
+                                    clearable
+                                ></v-select>
+                                <v-btn type="submit" color="primary" class="mr-2"> 儲存修改 </v-btn>
+                                <v-btn type="button" color="error" @click="cancelEdit">
+                                    取消
+                                </v-btn>
+                            </v-form>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
+
+            <!-- 新增分類表單 -->
+            <v-row class="mt-4">
+                <v-col cols="12">
+                    <v-card outlined>
+                        <v-card-title>新增分類</v-card-title>
+                        <v-card-text>
+                            <v-form @submit.prevent="addCategory">
+                                <v-text-field
+                                    label="分類名稱"
+                                    v-model="newCategory.name"
+                                    required
+                                ></v-text-field>
+                                <v-textarea
+                                    label="描述"
+                                    v-model="newCategory.description"
+                                ></v-textarea>
+                                <v-select
+                                    label="上層分類"
+                                    :items="categories"
+                                    v-model="newCategory.parent_id"
+                                    item-text="name"
+                                    item-value="id"
+                                    clearable
+                                ></v-select>
+                                <v-btn type="submit" color="primary"> 新增分類 </v-btn>
+                            </v-form>
+                        </v-card-text>
+                    </v-card>
+                </v-col>
+            </v-row>
+        </v-container>
+    </v-app>
 </template>
 
 <script>
@@ -177,74 +217,5 @@ export default {
 </script>
 
 <style scoped>
-.category-edit {
-    max-width: 800px;
-    margin: 2em auto;
-    padding: 1em;
-    background: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-
-.category-edit h1 {
-    text-align: center;
-    margin-bottom: 1em;
-}
-
-.category-list {
-    margin-bottom: 2em;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1em;
-}
-
-th,
-td {
-    border: 1px solid #ccc;
-    padding: 0.5em;
-    text-align: left;
-}
-
-.edit-form,
-.add-form {
-    margin-bottom: 2em;
-    padding: 1em;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.form-group {
-    margin-bottom: 1em;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.3em;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-    width: 100%;
-    padding: 0.5em;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-button {
-    padding: 0.5em 1em;
-    background-color: #007bff;
-    border: none;
-    color: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 0.5em;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
+/* 若需要額外客製化，可再加入調整 */
 </style>
