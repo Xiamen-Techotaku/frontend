@@ -110,7 +110,7 @@ export default {
     methods: {
         async fetchCurrentUser() {
             try {
-                const response = await axios.get("http://localhost:4000/api/auth/me", {
+                const response = await axios.get(`${this.$backendUrl}/api/auth/me`, {
                     withCredentials: true,
                 });
                 this.currentUser = response.data.user;
@@ -120,7 +120,7 @@ export default {
         },
         async fetchCartCount() {
             try {
-                const response = await axios.get("http://localhost:4000/api/cart", {
+                const response = await axios.get(`${this.$backendUrl}/api/cart`, {
                     withCredentials: true,
                 });
                 this.cartCount = response.data.cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -131,7 +131,7 @@ export default {
         },
         async fetchCategories() {
             try {
-                const response = await axios.get("http://localhost:4000/api/categories");
+                const response = await axios.get(`${this.$backendUrl}/api/categories`);
                 this.categories = response.data.categories;
             } catch (error) {
                 console.error("取得分類資料失敗：", error);
@@ -143,7 +143,7 @@ export default {
         },
         async logout() {
             try {
-                await axios.get("http://localhost:4000/api/auth/logout", {
+                await axios.get(`${this.$backendUrl}/api/auth/logout`, {
                     withCredentials: true,
                 });
                 this.currentUser = null;
