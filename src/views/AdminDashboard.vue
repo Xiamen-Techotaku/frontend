@@ -10,8 +10,12 @@
                     <v-btn color="secondary" @click="$router.push('/productCreate')" class="mr-2">
                         手動採集上架
                     </v-btn>
-                    <v-btn color="warning" @click="$router.push('/CategoryEdit')">
+                    <v-btn color="warning" @click="$router.push('/CategoryEdit')" class="mr-2">
                         類別編輯
+                    </v-btn>
+                    <!-- 修改後的增加評論按鈕：點擊後顯示評論表單元件 -->
+                    <v-btn color="success" @click="showReviewForm = true" class="mr-2">
+                        增加評論
                     </v-btn>
                 </v-col>
                 <v-col cols="12" md="6" class="text-right">
@@ -70,6 +74,51 @@
                     <v-progress-circular indeterminate color="primary"></v-progress-circular>
                 </v-col>
             </v-row>
+
+            <!-- 新增評論的對話框 (顯示內嵌的評論元件) -->
+            <v-dialog v-model="showReviewForm" max-width="500">
+                <v-card>
+                    <v-card-title>
+                        <span class="headline">新增評論</span>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-form ref="reviewFormRef">
+                            <v-text-field
+                                label="商品ID"
+                                v-model="reviewForm.product_id"
+                                type="number"
+                                required
+                            ></v-text-field>
+                            <v-text-field
+                                label="評論者名稱"
+                                v-model="reviewForm.reviewer_name"
+                                placeholder="可留空代表匿名"
+                            ></v-text-field>
+                            <v-textarea
+                                label="評論內容"
+                                v-model="reviewForm.content"
+                                required
+                            ></v-textarea>
+                            <div class="my-2">
+                                <span>評分：</span>
+                                <v-rating
+                                    v-model="reviewForm.rating"
+                                    background-color="grey lighten-3"
+                                    color="amber"
+                                    large
+                                ></v-rating>
+                            </div>
+                        </v-form>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="showReviewForm = false">
+                            取消
+                        </v-btn>
+                        <v-btn color="blue darken-1" text @click="submitReview"> 送出評論 </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
         </v-container>
     </v-app>
 </template>
@@ -92,20 +141,27 @@ export default {
                 { title: "建立日期", key: "created_at" },
                 { title: "操作", key: "actions", sortable: false },
             ],
-            // 儲存每筆訂單目前所選的狀態，預設以物件儲存： { orderId: status }
+            // 儲存每筆訂單目前所選的狀態： { orderId: status }
             statusSelections: {},
-            // 下拉選單選項： value 為資料庫中的狀態，text 為顯示文字
             statusOptions: [
                 { value: "pending", text: "等待處理" },
                 { value: "processing", text: "處理中" },
                 { value: "completed", text: "完成" },
                 { value: "cancelled", text: "取消" },
             ],
+            // 控制新增評論對話框的顯示
+            showReviewForm: false,
+            // 評論表單的資料
+            reviewForm: {
+                product_id: "",
+                reviewer_name: "",
+                content: "",
+                rating: 5,
+            },
         };
     },
     computed: {
         groupedOrders() {
-            // 將 orders 依據 order_status 分組
             return this.orders.reduce((groups, order) => {
                 const status = order.order_status || "unknown";
                 if (!groups[status]) groups[status] = [];
@@ -118,7 +174,7 @@ export default {
         async fetchAdminUser() {
             this.loading = true;
             try {
-                // 呼叫後端管理員驗證 API (使用 /api/admin/me)
+                // 呼叫後端管理員驗證 API
                 const response = await axios.get(`${this.$backendUrl}/api/admin/me`, {
                     withCredentials: true,
                 });
@@ -138,7 +194,6 @@ export default {
                 });
                 if (response.data && response.data.orders) {
                     this.orders = response.data.orders;
-                    // 初始化 statusSelections
                     this.orders.forEach((order) => {
                         if (!this.statusSelections[order.id]) {
                             this.statusSelections[order.id] = order.order_status || "pending";
@@ -180,6 +235,26 @@ export default {
             } catch (error) {
                 console.error("更新訂單狀態失敗：", error);
                 alert("更新訂單狀態失敗");
+            }
+        },
+        async submitReview() {
+            try {
+                // 呼叫後端新增評論 API，送出 reviewForm 資料，並攜帶 cookie
+                await axios.post(`${this.$backendUrl}/api/reviews`, this.reviewForm, {
+                    withCredentials: true,
+                });
+                alert("評論送出成功");
+                this.showReviewForm = false;
+                // 清空表單資料
+                this.reviewForm = {
+                    product_id: "",
+                    reviewer_name: "",
+                    content: "",
+                    rating: 5,
+                };
+            } catch (error) {
+                console.error("送出評論失敗：", error);
+                alert("送出評論失敗");
             }
         },
     },

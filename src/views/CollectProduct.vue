@@ -1,6 +1,11 @@
 <template>
     <v-app>
         <v-container>
+            <v-row>
+                <v-col cols="12">
+                    <v-btn color="primary" @click="$router.go(-1)" class="mb-4"> 返回 </v-btn>
+                </v-col>
+            </v-row>
             <v-card class="pa-4">
                 <v-card-title>產品採集 - 1688</v-card-title>
                 <v-card-text>

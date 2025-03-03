@@ -1,115 +1,173 @@
 <template>
-    <div class="product-create">
-        <h1>上架新商品</h1>
-        <form @submit.prevent="handleSubmit">
-            <!-- 商品名稱 -->
-            <div class="form-group">
-                <label for="name">商品名稱:</label>
-                <input type="text" id="name" v-model="form.name" required />
-            </div>
+    <v-app>
+        <v-container>
+            <v-row>
+                <v-col cols="12">
+                    <v-btn color="primary" @click="$router.go(-1)" class="mb-4"> 返回 </v-btn>
+                </v-col>
+            </v-row>
+            <v-card>
+                <v-card-title class="headline">上架新商品</v-card-title>
+                <v-card-text>
+                    <v-form ref="productForm" @submit.prevent="handleSubmit">
+                        <!-- 商品名稱 -->
+                        <v-text-field v-model="form.name" label="商品名稱" required></v-text-field>
 
-            <!-- 分類下拉選單 -->
-            <div class="form-group">
-                <label for="category">分類:</label>
-                <select id="category" v-model="form.category_id" required>
-                    <option value="" disabled>請選擇分類</option>
-                    <option v-for="cat in categories" :key="cat.id" :value="cat.id">
-                        {{ cat.name }}
-                    </option>
-                </select>
-            </div>
+                        <!-- 分類下拉選單 -->
+                        <v-select
+                            v-model="form.category_id"
+                            :items="categories"
+                            item-text="name"
+                            item-value="id"
+                            label="分類"
+                            required
+                            placeholder="請選擇分類"
+                        ></v-select>
 
-            <!-- 價格 -->
-            <div class="form-group">
-                <label for="price">價格:</label>
-                <input type="number" id="price" v-model="form.price" required step="0.01" />
-            </div>
+                        <!-- 價格 -->
+                        <v-text-field
+                            v-model="form.price"
+                            label="價格"
+                            type="number"
+                            required
+                            step="0.01"
+                        ></v-text-field>
 
-            <!-- 商品介紹（支持內嵌圖片的 HTML 格式） -->
-            <div class="form-group">
-                <label for="description">商品介紹:</label>
-                <textarea id="description" v-model="form.description" rows="5" required></textarea>
-            </div>
+                        <!-- 商品介紹 -->
+                        <v-textarea
+                            v-model="form.description"
+                            label="商品介紹"
+                            rows="5"
+                            required
+                        ></v-textarea>
 
-            <!-- 商品圖片：多檔上傳 -->
-            <div class="form-group">
-                <label for="images">商品圖片:</label>
-                <input
-                    type="file"
-                    id="images"
-                    @change="handleFileChange"
-                    multiple
-                    accept="image/*"
-                />
-            </div>
+                        <!-- 商品圖片：多檔上傳 -->
+                        <v-file-input
+                            v-model="images"
+                            label="商品圖片"
+                            multiple
+                            accept="image/*"
+                            @change="handleFileChange"
+                        ></v-file-input>
 
-            <!-- 圖片預覽與順序調整 -->
-            <div class="image-previews" v-if="imagePreviews.length">
-                <h3>圖片預覽:</h3>
-                <div class="preview" v-for="(img, index) in imagePreviews" :key="index">
-                    <img :src="img" alt="Product Image Preview" />
-                    <div class="move-buttons">
-                        <button type="button" @click="moveImageUp(index)" :disabled="index === 0">
-                            上移
-                        </button>
-                        <button
-                            type="button"
-                            @click="moveImageDown(index)"
-                            :disabled="index === imagePreviews.length - 1"
-                        >
-                            下移
-                        </button>
-                    </div>
-                </div>
-            </div>
+                        <!-- 圖片預覽與順序調整 -->
+                        <div v-if="imagePreviews.length">
+                            <v-subheader>圖片預覽</v-subheader>
+                            <v-row>
+                                <v-col
+                                    v-for="(img, index) in imagePreviews"
+                                    :key="index"
+                                    cols="12"
+                                    sm="4"
+                                >
+                                    <v-img :src="img" aspect-ratio="1" class="mb-2"></v-img>
+                                    <v-row dense>
+                                        <v-col cols="6">
+                                            <v-btn
+                                                small
+                                                block
+                                                @click="moveImageUp(index)"
+                                                :disabled="index === 0"
+                                            >
+                                                上移
+                                            </v-btn>
+                                        </v-col>
+                                        <v-col cols="6">
+                                            <v-btn
+                                                small
+                                                block
+                                                @click="moveImageDown(index)"
+                                                :disabled="index === imagePreviews.length - 1"
+                                            >
+                                                下移
+                                            </v-btn>
+                                        </v-col>
+                                    </v-row>
+                                </v-col>
+                            </v-row>
+                        </div>
 
-            <!-- 規格區塊：價格可能不同 -->
-            <div class="specifications">
-                <h2>規格 (價格可能不同)</h2>
-                <div v-for="(spec, index) in specifications" :key="index" class="spec-item">
-                    <input type="text" v-model="spec.name" placeholder="規格名稱" required />
-                    <input
-                        type="number"
-                        v-model="spec.price"
-                        placeholder="價格"
-                        required
-                        step="0.01"
-                    />
-                    <button type="button" @click="removeSpecification(index)">刪除</button>
-                </div>
-                <button type="button" @click="addSpecification">新增規格</button>
-            </div>
+                        <!-- 規格區塊：價格可能不同 -->
+                        <v-card class="mb-4" outlined>
+                            <v-card-title>規格 (價格可能不同)</v-card-title>
+                            <v-card-text>
+                                <v-row
+                                    v-for="(spec, index) in specifications"
+                                    :key="index"
+                                    align="center"
+                                    class="mb-2"
+                                >
+                                    <v-col cols="5">
+                                        <v-text-field
+                                            v-model="spec.name"
+                                            label="規格名稱"
+                                            required
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="5">
+                                        <v-text-field
+                                            v-model="spec.price"
+                                            label="價格"
+                                            type="number"
+                                            step="0.01"
+                                            required
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="2">
+                                        <v-btn icon @click="removeSpecification(index)">
+                                            <v-icon color="red">mdi-delete</v-icon>
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
+                                <v-btn color="primary" @click="addSpecification">新增規格</v-btn>
+                            </v-card-text>
+                        </v-card>
 
-            <!-- 項目區塊：價格相同 -->
-            <div class="options">
-                <h2>項目 (價格相同)</h2>
-                <div v-for="(opt, index) in options" :key="index" class="option-item">
-                    <input
-                        type="text"
-                        v-model="opt.option_name"
-                        placeholder="項目類型 (如顏色)"
-                        required
-                    />
-                    <input
-                        type="text"
-                        v-model="opt.option_value"
-                        placeholder="項目值 (如紅色)"
-                        required
-                    />
-                    <button type="button" @click="removeOption(index)">刪除</button>
-                </div>
-                <button type="button" @click="addOption">新增項目</button>
-            </div>
+                        <!-- 項目區塊：價格相同 -->
+                        <v-card class="mb-4" outlined>
+                            <v-card-title>項目 (價格相同)</v-card-title>
+                            <v-card-text>
+                                <v-row
+                                    v-for="(opt, index) in options"
+                                    :key="index"
+                                    align="center"
+                                    class="mb-2"
+                                >
+                                    <v-col cols="5">
+                                        <v-text-field
+                                            v-model="opt.option_name"
+                                            label="項目類型 (如顏色)"
+                                            required
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="5">
+                                        <v-text-field
+                                            v-model="opt.option_value"
+                                            label="項目值 (如紅色)"
+                                            required
+                                        ></v-text-field>
+                                    </v-col>
+                                    <v-col cols="2">
+                                        <v-btn icon @click="removeOption(index)">
+                                            <v-icon color="red">mdi-delete</v-icon>
+                                        </v-btn>
+                                    </v-col>
+                                </v-row>
+                                <v-btn color="primary" @click="addOption">新增項目</v-btn>
+                            </v-card-text>
+                        </v-card>
 
-            <!-- 上架按鈕 -->
-            <button type="submit">上架商品</button>
-        </form>
-    </div>
+                        <!-- 上架按鈕 -->
+                        <v-btn type="submit" color="success" block>上架商品</v-btn>
+                    </v-form>
+                </v-card-text>
+            </v-card>
+        </v-container>
+    </v-app>
 </template>
 
 <script>
 import axios from "axios";
-
 export default {
     name: "ProductCreate",
     data() {
@@ -137,17 +195,18 @@ export default {
                 this.categories = [];
             }
         },
-        handleFileChange(e) {
-            const files = e.target.files;
-            this.images = Array.from(files);
+        handleFileChange() {
+            // 清空先前預覽
             this.imagePreviews = [];
-            Array.from(files).forEach((file) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.imagePreviews.push(e.target.result);
-                };
-                reader.readAsDataURL(file);
-            });
+            if (this.images && this.images.length) {
+                this.images.forEach((file) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.imagePreviews.push(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
         },
         addSpecification() {
             this.specifications.push({ name: "", price: "" });
@@ -161,7 +220,6 @@ export default {
         removeOption(index) {
             this.options.splice(index, 1);
         },
-        // 上移圖片：將 index 與 index-1 的位置互換
         moveImageUp(index) {
             if (index === 0) return;
             [this.images[index - 1], this.images[index]] = [
@@ -173,7 +231,6 @@ export default {
                 this.imagePreviews[index - 1],
             ];
         },
-        // 下移圖片：將 index 與 index+1 的位置互換
         moveImageDown(index) {
             if (index === this.imagePreviews.length - 1) return;
             [this.images[index + 1], this.images[index]] = [
@@ -203,6 +260,7 @@ export default {
                     headers: {
                         "Content-Type": "multipart/form-data",
                     },
+                    withCredentials: true,
                 });
                 alert("商品上架成功");
                 // 重置表單
@@ -224,117 +282,5 @@ export default {
 </script>
 
 <style scoped>
-.product-create {
-    max-width: 600px;
-    margin: 2em auto;
-    padding: 1em;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-}
-.product-create h1 {
-    text-align: center;
-    margin-bottom: 1em;
-}
-.form-group {
-    margin-bottom: 1em;
-}
-.form-group label {
-    display: block;
-    margin-bottom: 0.5em;
-}
-.form-group input[type="text"],
-.form-group input[type="number"],
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 0.5em;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-.image-previews {
-    margin-bottom: 1em;
-}
-.image-previews h3 {
-    margin-bottom: 0.5em;
-}
-.image-previews .preview {
-    display: inline-block;
-    margin-right: 10px;
-    vertical-align: top;
-    text-align: center;
-}
-.image-previews .preview img {
-    max-width: 100px;
-    max-height: 100px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    display: block;
-    margin-bottom: 0.3em;
-}
-.move-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.move-buttons button {
-    padding: 0.2em 0.5em;
-    font-size: 12px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-.move-buttons button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
-
-/* 規格與項目區塊 */
-.specifications,
-.options {
-    margin-bottom: 1em;
-    padding: 1em;
-    border: 1px dashed #aaa;
-    border-radius: 4px;
-}
-.specifications h2,
-.options h2 {
-    margin-bottom: 0.5em;
-}
-.spec-item,
-.option-item {
-    display: flex;
-    gap: 0.5em;
-    margin-bottom: 0.5em;
-}
-.spec-item input,
-.option-item input {
-    flex: 1;
-}
-button {
-    padding: 0.5em 1em;
-    background-color: #007bff;
-    border: none;
-    color: #fff;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 0.5em;
-}
-button:hover {
-    background-color: #0056b3;
-}
-button[type="submit"] {
-    width: 100%;
-    padding: 0.7em;
-    background-color: #ff6600;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-button[type="submit"]:hover {
-    background-color: #e65c00;
-}
+/* 若有需要可在此加入額外的樣式調整 */
 </style>

@@ -178,11 +178,17 @@ export default {
             try {
                 const { id, name, description, parent_id } = this.editCategory;
                 // 呼叫後端 API 更新分類資料 (PUT /api/categories/:id)
-                await axios.put(`${this.$backendUrl}/api/categories/${id}`, {
-                    name,
-                    description,
-                    parent_id: parent_id || null, // 如果 parent_id 為空字串，轉換為 null
-                });
+                await axios.put(
+                    `${this.$backendUrl}/api/categories/${id}`,
+                    {
+                        name,
+                        description,
+                        parent_id: parent_id || null, // 如果 parent_id 為空字串，轉換為 null
+                    },
+                    {
+                        withCredentials: true,
+                    }
+                );
                 alert("分類更新成功");
                 await this.fetchCategories();
                 this.cancelEdit();
@@ -195,11 +201,17 @@ export default {
             try {
                 const { name, description, parent_id } = this.newCategory;
                 // 呼叫後端 API 建立新分類 (POST /api/categories)
-                await axios.post(`${this.$backendUrl}/api/categories`, {
-                    name,
-                    description,
-                    parent_id: parent_id || null,
-                });
+                await axios.post(
+                    `${this.$backendUrl}/api/categories`,
+                    {
+                        name,
+                        description,
+                        parent_id: parent_id || null,
+                    },
+                    {
+                        withCredentials: true,
+                    }
+                );
                 alert("新增分類成功");
                 await this.fetchCategories();
                 // 重置新增分類表單

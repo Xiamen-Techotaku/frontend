@@ -103,9 +103,9 @@
                                     ></v-number-input>
                                 </v-col>
                                 <v-col cols="12" md="6" class="text-right">
-                                    <v-btn color="primary" class="mr-2" @click="addToCart"
-                                        >放入購物車</v-btn
-                                    >
+                                    <v-btn color="primary" class="mr-2" @click="addToCart">
+                                        放入購物車
+                                    </v-btn>
                                     <v-btn color="error" @click="buyNow">立即購買</v-btn>
                                 </v-col>
                             </v-row>
@@ -114,8 +114,48 @@
                 </v-col>
             </v-row>
 
-            <!-- 商品描述 (可選) -->
-            <v-card-text v-html="product.description"></v-card-text>
+            <!-- 分頁式顯示：商品內容 與 評論 -->
+            <v-tabs v-model="tab" background-color="transparent" class="mt-6">
+                <v-tab value="one">商品內容</v-tab>
+                <v-tab value="two">評論</v-tab>
+            </v-tabs>
+
+            <v-card-text>
+                <v-tabs-window v-model="tab">
+                    <!-- 商品內容 -->
+                    <v-tabs-window-item value="one">
+                        <v-card-text v-html="product.description"></v-card-text>
+                    </v-tabs-window-item>
+                    <!-- 評論 -->
+                    <v-tabs-window-item value="two">
+                        <div v-if="reviews && reviews.length">
+                            <div v-for="(review, index) in reviews" :key="index" class="mb-4">
+                                <v-card outlined>
+                                    <v-card-title>
+                                        {{ review.reviewer_name ? review.reviewer_name : "匿名" }}
+                                    </v-card-title>
+                                    <v-card-text>
+                                        {{ review.content }}
+                                        <div v-if="review.rating" class="mt-2">
+                                            <!-- 用星星顯示評分 -->
+                                            <v-rating
+                                                :model-value="review.rating"
+                                                readonly
+                                                color="amber"
+                                                background-color="grey lighten-3"
+                                                dense
+                                            ></v-rating>
+                                        </div>
+                                    </v-card-text>
+                                </v-card>
+                            </div>
+                        </div>
+                        <div v-else>
+                            <p>目前沒有評論</p>
+                        </div>
+                    </v-tabs-window-item>
+                </v-tabs-window>
+            </v-card-text>
         </v-container>
     </v-app>
 </template>
@@ -135,6 +175,8 @@ export default {
             selectedSpecId: null, // 保存規格 id
             selectedOptions: {}, // 每個選項群只保存一個值
             orderQuantity: 1,
+            tab: "one", // 分頁控制，預設顯示商品內容
+            reviews: [], // 儲存評論資料
         };
     },
     computed: {
@@ -182,6 +224,11 @@ export default {
             try {
                 const response = await axios.get(`${this.$backendUrl}/api/products/${productId}`);
                 this.product = response.data.product;
+                // 取得該商品的評論資料
+                const reviewsResponse = await axios.get(`${this.$backendUrl}/api/reviews`, {
+                    params: { product_id: productId },
+                });
+                this.reviews = reviewsResponse.data.reviews || [];
             } catch (error) {
                 console.error("取得商品資料失敗：", error);
             } finally {
