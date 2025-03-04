@@ -3,9 +3,9 @@
         <v-container class="py-8">
             <!-- Hero 區塊 -->
             <v-img
-                src="https://via.placeholder.com/1200x400"
+                src="/header.png"
                 height="400px"
-                gradient="to top, rgba(0,0,0,.7), rgba(0,0,0,.1)"
+                
                 class="white--text d-flex align-center justify-center"
             >
                 <div class="text-center">
@@ -13,7 +13,6 @@
                         歡迎來到 {{ shopName }}
                     </h1>
                     <p class="subtitle-1 mb-4">發現我們精選的好貨，立即體驗精彩購物！</p>
-                    <v-btn color="primary" large @click="goToProducts">立即購物</v-btn>
                 </div>
             </v-img>
 
@@ -56,7 +55,7 @@ export default {
         return {
             shopName: import.meta.env.VITE_SHOP_NAME || "ShopName",
             products: [],
-            placeholderImage: "https://via.placeholder.com/150?text=No+Image",
+            placeholderImage: "/header.png",
         };
     },
     methods: {

@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 public/vite.png
+public/header.png
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
