@@ -108,7 +108,7 @@
                                     label="上層分類"
                                     :items="categories"
                                     v-model="newCategory.parent_id"
-                                    item-text="name"
+                                    item-title="name"
                                     item-value="id"
                                     clearable
                                 ></v-select>
