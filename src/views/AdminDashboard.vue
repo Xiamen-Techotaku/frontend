@@ -13,7 +13,6 @@
                     <v-btn color="warning" @click="$router.push('/CategoryEdit')" class="mr-2">
                         類別編輯
                     </v-btn>
-                    <!-- 修改後的增加評論按鈕：點擊後顯示評論表單元件 -->
                     <v-btn color="success" @click="showReviewForm = true" class="mr-2">
                         增加評論
                     </v-btn>
@@ -28,16 +27,31 @@
                 <p>您沒有管理員權限！</p>
             </div>
 
-            <!-- 訂單分組顯示 -->
-            <v-expansion-panels v-if="adminUser" multiple>
-                <v-expansion-panel v-for="(orders, status) in groupedOrders" :key="status">
-                    <v-expansion-panel-title>
-                        {{ status }} ({{ orders.length }})
-                    </v-expansion-panel-title>
-                    <v-expansion-panel-text>
+            <!-- 訂單 Tabs 與資料表 -->
+            <div v-if="adminUser">
+                <!-- Tabs 標籤 -->
+                <v-tabs v-model="activeTab" background-color="primary" dark>
+                    <v-tab
+                        v-for="(tab, index) in tabs"
+                        :key="tab.value"
+                        :value="tab.value"
+                        :disabled="tab.value !== 'all' && countOrders(tab.value) === 0"
+                    >
+                        {{ tab.text }} ({{
+                            tab.value === "all" ? orders.length : countOrders(tab.value)
+                        }})
+                    </v-tab>
+                </v-tabs>
+                <!-- 分頁內容 -->
+                <v-tabs-window v-model="activeTab">
+                    <v-tabs-window-item
+                        v-for="(tab, index) in tabs"
+                        :key="tab.value"
+                        :value="tab.value"
+                    >
                         <v-data-table
                             :headers="orderHeaders"
-                            :items="orders"
+                            :items="filteredOrders(tab.value)"
                             class="elevation-1"
                             disable-sort
                         >
@@ -65,17 +79,18 @@
                                 </v-btn>
                             </template>
                         </v-data-table>
-                    </v-expansion-panel-text>
-                </v-expansion-panel>
-            </v-expansion-panels>
+                    </v-tabs-window-item>
+                </v-tabs-window>
+            </div>
 
+            <!-- Loading 指示 -->
             <v-row v-if="loading" justify="center">
                 <v-col cols="12" class="text-center">
                     <v-progress-circular indeterminate color="primary"></v-progress-circular>
                 </v-col>
             </v-row>
 
-            <!-- 新增評論的對話框 (顯示內嵌的評論元件) -->
+            <!-- 新增評論的對話框 -->
             <v-dialog v-model="showReviewForm" max-width="500">
                 <v-card>
                     <v-card-title>
@@ -141,17 +156,21 @@ export default {
                 { title: "建立日期", key: "created_at" },
                 { title: "操作", key: "actions", sortable: false },
             ],
-            // 儲存每筆訂單目前所選的狀態： { orderId: status }
+            // 儲存每筆訂單目前所選狀態 { orderId: status }
             statusSelections: {},
+            // 訂單狀態選項（新增「運輸中」狀態）
             statusOptions: [
                 { value: "pending", text: "等待處理" },
                 { value: "processing", text: "處理中" },
+                { value: "shipping", text: "運輸中" },
                 { value: "completed", text: "完成" },
                 { value: "cancelled", text: "取消" },
             ],
-            // 控制新增評論對話框的顯示
+            // Tabs 控制，目前 activeTab 將以選中的 tab value (預設為 "all")
+            activeTab: "all",
+            // 控制新增評論對話框顯示
             showReviewForm: false,
-            // 評論表單的資料
+            // 評論表單資料
             reviewForm: {
                 product_id: "",
                 reviewer_name: "",
@@ -161,20 +180,31 @@ export default {
         };
     },
     computed: {
-        groupedOrders() {
-            return this.orders.reduce((groups, order) => {
-                const status = order.order_status || "unknown";
-                if (!groups[status]) groups[status] = [];
-                groups[status].push(order);
-                return groups;
-            }, {});
+        // 定義所有 Tabs，第一個為「全部」，其餘依據 statusOptions 建立
+        tabs() {
+            return [
+                { value: "all", text: "全部" },
+                ...this.statusOptions.map((option) => ({
+                    value: option.value,
+                    text: option.text,
+                })),
+            ];
         },
     },
     methods: {
+        countOrders(status) {
+            return this.orders.filter((order) => order.order_status === status).length;
+        },
+        // 回傳根據 tab 過濾後的訂單清單；若 tab 為 all 則回傳全部
+        filteredOrders(tabValue) {
+            if (tabValue === "all") {
+                return this.orders;
+            }
+            return this.orders.filter((order) => order.order_status === tabValue);
+        },
         async fetchAdminUser() {
             this.loading = true;
             try {
-                // 呼叫後端管理員驗證 API
                 const response = await axios.get(`${this.$backendUrl}/api/admin/me`, {
                     withCredentials: true,
                 });
@@ -194,6 +224,7 @@ export default {
                 });
                 if (response.data && response.data.orders) {
                     this.orders = response.data.orders;
+                    // 為每筆訂單初始化狀態選擇（若未設定則使用 order_status 或預設 'pending'）
                     this.orders.forEach((order) => {
                         if (!this.statusSelections[order.id]) {
                             this.statusSelections[order.id] = order.order_status || "pending";
@@ -239,13 +270,12 @@ export default {
         },
         async submitReview() {
             try {
-                // 呼叫後端新增評論 API，送出 reviewForm 資料，並攜帶 cookie
                 await axios.post(`${this.$backendUrl}/api/reviews`, this.reviewForm, {
                     withCredentials: true,
                 });
                 alert("評論送出成功");
                 this.showReviewForm = false;
-                // 清空表單資料
+                // 清空評論表單
                 this.reviewForm = {
                     product_id: "",
                     reviewer_name: "",
@@ -268,5 +298,5 @@ export default {
 </script>
 
 <style scoped>
-/* 根據需求調整樣式 */
+/* 如有需要請自行調整樣式 */
 </style>

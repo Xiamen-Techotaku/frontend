@@ -5,27 +5,54 @@
                 <v-card-title class="headline">我的訂單</v-card-title>
                 <v-divider></v-divider>
                 <v-card-text>
-                    <v-data-table
-                        :headers="headers"
-                        :items="orders"
-                        :items-per-page="5"
-                        class="elevation-1"
-                        :loading="loading"
-                        loading-text="載入中..."
-                    >
-                        <template v-slot:item.created_at="{ item }">
-                            {{ formatDate(item.created_at) }}
-                        </template>
-                        <template v-slot:item.tracking_number="{ item }">
-                            <span v-if="item.tracking_number">{{ item.tracking_number }}</span>
-                            <span v-else>未填寫</span>
-                        </template>
-                        <template v-slot:item.actions="{ item }">
-                            <v-btn color="primary" small @click="viewOrder(item.id)"
-                                >查看詳情</v-btn
+                    <!-- 訂單 Tabs 標籤 -->
+                    <v-tabs v-model="activeTab" background-color="primary" dark>
+                        <v-tab
+                            v-for="(tab, index) in tabs"
+                            :key="tab.value"
+                            :value="tab.value"
+                            :disabled="tab.value !== 'all' && countOrders(tab.value) === 0"
+                        >
+                            {{ tab.text }} ({{
+                                tab.value === "all" ? orders.length : countOrders(tab.value)
+                            }})
+                        </v-tab>
+                    </v-tabs>
+                    <!-- 分頁內容 -->
+                    <v-tabs-window v-model="activeTab">
+                        <v-tabs-window-item
+                            v-for="(tab, index) in tabs"
+                            :key="tab.value"
+                            :value="tab.value"
+                        >
+                            <v-data-table
+                                :headers="headers"
+                                :items="filteredOrders(tab.value)"
+                                :items-per-page="5"
+                                class="elevation-1"
+                                :loading="loading"
+                                loading-text="載入中..."
                             >
-                        </template>
-                    </v-data-table>
+                                <template v-slot:item.created_at="{ item }">
+                                    {{ formatDate(item.created_at) }}
+                                </template>
+                                <template v-slot:item.order_status="{ item }">
+                                    {{ item.order_status }}
+                                </template>
+                                <template v-slot:item.tracking_number="{ item }">
+                                    <span v-if="item.tracking_number">{{
+                                        item.tracking_number
+                                    }}</span>
+                                    <span v-else>未填寫</span>
+                                </template>
+                                <template v-slot:item.actions="{ item }">
+                                    <v-btn color="primary" small @click="viewOrder(item.id)">
+                                        查看詳情
+                                    </v-btn>
+                                </template>
+                            </v-data-table>
+                        </v-tabs-window-item>
+                    </v-tabs-window>
                 </v-card-text>
             </v-card>
         </v-container>
@@ -34,21 +61,33 @@
 
 <script>
 import axios from "axios";
-
 export default {
     name: "MyOrders",
     data() {
         return {
             orders: [],
             loading: false,
+            // 修改後的 headers，多一個狀態欄位 (order_status)
             headers: [
                 { title: "訂單編號", key: "id" },
                 { title: "取件姓名", key: "customer_name" },
                 { title: "取件電話", key: "phone" },
                 { title: "超商", key: "store_name" },
+                { title: "狀態", key: "order_status" },
                 { title: "建立日期", key: "created_at" },
                 { title: "貨運單號", key: "tracking_number" },
                 { title: "操作", key: "actions", sortable: false },
+            ],
+            // Tabs 初始以 "all" 為預設分頁
+            activeTab: "all",
+            // tabs 陣列新增「運輸中」狀態，順序為全部、等待處理、處理中、運輸中、完成、取消
+            tabs: [
+                { value: "all", text: "全部" },
+                { value: "pending", text: "等待處理" },
+                { value: "processing", text: "處理中" },
+                { value: "shipping", text: "運輸中" },
+                { value: "completed", text: "完成" },
+                { value: "cancelled", text: "取消" },
             ],
         };
     },
@@ -64,10 +103,20 @@ export default {
                 }
             } catch (error) {
                 console.error("取得訂單失敗：", error);
-                // 根據需求顯示錯誤訊息，例如使用 snackbar
             } finally {
                 this.loading = false;
             }
+        },
+        // 回傳指定狀態的訂單數量
+        countOrders(status) {
+            return this.orders.filter((order) => order.order_status === status).length;
+        },
+        // 根據 tab 過濾訂單；若 tab 為 all 則回傳全部訂單
+        filteredOrders(tabValue) {
+            if (tabValue === "all") {
+                return this.orders;
+            }
+            return this.orders.filter((order) => order.order_status === tabValue);
         },
         formatDate(dateStr) {
             const options = {
@@ -80,7 +129,6 @@ export default {
             return new Date(dateStr).toLocaleDateString("zh-TW", options);
         },
         viewOrder(orderId) {
-            // 依需求導向訂單詳情頁
             this.$router.push(`/order/${orderId}`);
         },
     },
@@ -91,5 +139,5 @@ export default {
 </script>
 
 <style scoped>
-/* 根據需求自定義樣式 */
+/* 如有需要請自行調整樣式 */
 </style>

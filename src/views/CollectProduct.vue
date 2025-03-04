@@ -175,7 +175,10 @@ export default {
             try {
                 const response = await axios.post(
                     `${this.$backendUrl}/api/collect/upload`,
-                    this.collectedData
+                    this.collectedData,
+                    {
+                        withCredentials: true,
+                    }
                 );
                 alert("上傳成功，產品ID：" + response.data.productId);
                 // 重置

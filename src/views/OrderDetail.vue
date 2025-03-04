@@ -1,6 +1,6 @@
 <template>
     <v-app>
-        <v-container class="py-8">
+        <v-container>
             <!-- 返回按鈕 -->
             <v-btn color="primary" class="mb-4" @click="$router.back()">返回</v-btn>
 
@@ -69,6 +69,12 @@
                             <template #item.productName="{ item }">
                                 {{ item.productName }}
                             </template>
+                            <template #item.remark="{ item }">
+                                {{ formatRemark(item) }}
+                            </template>
+                            <template #item.quantity="{ item }">
+                                {{ item.quantity }}
+                            </template>
                             <template #item.unit_price="{ item }">
                                 {{ formatPrice(item.unit_price) }}
                             </template>
@@ -86,7 +92,7 @@
                                 outlined
                                 hide-details
                             ></v-text-field>
-                            <v-btn color="primary" @click="updateTrackingNumber"> 更新單號 </v-btn>
+                            <v-btn color="primary" @click="updateTrackingNumber">更新單號</v-btn>
                         </div>
                     </div>
                 </v-card-text>
@@ -105,15 +111,13 @@ export default {
             order: {},
             orderItems: [],
             loading: false,
-            // 假設在其它地方(例如 App.vue)有取得當前使用者資訊，傳入此頁面
-            // 或你也可以在此頁面再呼叫 /api/auth/me 來判斷 is_admin
-            isAdmin: false, // 預設為 false，實際狀況可從外部帶入
-            newTrackingNumber: "", // 用來輸入或更新貨運單號
+            isAdmin: false,
+            newTrackingNumber: "",
+            // 修改後的 itemHeaders：將規格與選項欄位合併成「備註」
             itemHeaders: [
                 { title: "商品圖", key: "productImage" },
                 { title: "商品名稱", key: "productName" },
-                { title: "規格", key: "specification_id" },
-                { title: "選項", key: "options" },
+                { title: "備註", key: "remark" },
                 { title: "數量", key: "quantity" },
                 { title: "單價", key: "unit_price" },
                 { title: "小計", key: "subtotal" },
@@ -131,7 +135,7 @@ export default {
                 if (response.data) {
                     this.order = response.data.order;
                     this.orderItems = response.data.orderItems || [];
-                    // 針對每個訂單項目，呼叫 GET /api/products/:id 取得商品詳細資料
+                    // 針對每個訂單項目，取得商品詳細資料
                     await Promise.all(
                         this.orderItems.map(async (item) => {
                             try {
@@ -173,7 +177,6 @@ export default {
                 return;
             }
             try {
-                // 假設後端提供 PUT /api/admin/orders/:id/tracking 來更新單號
                 const orderId = this.order.id;
                 await axios.put(
                     `${this.$backendUrl}/api/admin/orders/${orderId}/tracking`,
@@ -181,7 +184,6 @@ export default {
                     { withCredentials: true }
                 );
                 alert("單號更新成功");
-                // 更新後重新取得訂單詳情
                 this.newTrackingNumber = "";
                 this.fetchOrderDetail();
             } catch (error) {
@@ -202,9 +204,38 @@ export default {
         formatPrice(value) {
             return `$${parseFloat(value).toFixed(2)}`;
         },
+        viewOrder(orderId) {
+            this.$router.push(`/order/${orderId}`);
+        },
+        // 將規格與選項合併成備註字串
+        formatRemark(item) {
+            let remark = "";
+            // 若存在 specification_id，加入其內容
+            if (item.specification_id) {
+                remark += item.specification_id;
+            }
+            let optionsStr = "";
+            if (item.options) {
+                try {
+                    // 嘗試解析 JSON 字串
+                    const optionsObj = JSON.parse(item.options);
+                    // 僅取值部分，並用逗號分隔
+                    optionsStr = Object.values(optionsObj).join(", ");
+                } catch (e) {
+                    // 若解析失敗，直接使用原值
+                    optionsStr = item.options;
+                }
+            }
+            if (remark && optionsStr) {
+                remark += ", " + optionsStr;
+            } else if (!remark && optionsStr) {
+                remark = optionsStr;
+            }
+            return remark;
+        },
     },
     async mounted() {
-        // 假設在此檢查使用者是否為 admin，也可在 App.vue 先取後再傳給此頁
+        // 檢查使用者是否為 admin (可依實際需求調整)
         try {
             const meRes = await axios.get(`${this.$backendUrl}/api/auth/me`, {
                 withCredentials: true,
