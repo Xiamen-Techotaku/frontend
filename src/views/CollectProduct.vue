@@ -254,15 +254,34 @@ export default {
             collectedData: null,
             error: null,
             selectedCategory: null,
-            // 倍數預設為 10
             priceMultiplier: 10,
-            // 賣價預設為空，採集後初始設為原價 * 倍數
             sellingPrice: null,
-            // 分頁狀態：'one' 為 1688，'two' 為 京東
             tab: "one",
+            // 新增 adminUser 與 loading 狀態
+            adminUser: null,
+            loading: false,
         };
     },
     methods: {
+        async fetchAdminUser() {
+            this.loading = true;
+            try {
+                const response = await axios.get(`${this.$backendUrl}/api/admin/me`, {
+                    withCredentials: true,
+                });
+                this.adminUser = response.data.user;
+                if (!this.adminUser) {
+                    alert("您沒有管理員權限！");
+                    this.$router.push("/login");
+                }
+            } catch (error) {
+                console.error("管理員驗證失敗：", error);
+                alert("您沒有管理員權限！");
+                this.$router.push("/login");
+            } finally {
+                this.loading = false;
+            }
+        },
         async fetchCategories() {
             try {
                 const response = await axios.get(`${this.$backendUrl}/api/categories`);
@@ -340,6 +359,7 @@ export default {
         },
     },
     mounted() {
+        this.fetchAdminUser();
         this.fetchCategories();
     },
 };

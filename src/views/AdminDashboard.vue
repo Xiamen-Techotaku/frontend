@@ -16,9 +16,10 @@
                     <v-btn color="success" @click="showReviewForm = true" class="mr-2">
                         增加評論
                     </v-btn>
+                    <v-btn color="error" @click="showDeleteProductForm = true"> 刪除商品 </v-btn>
                 </v-col>
                 <v-col cols="12" md="6" class="text-right">
-                    <v-btn color="info" @click="fetchOrders"> 重新整理訂單 </v-btn>
+                    <v-btn color="info" @click="fetchOrders">重新整理訂單</v-btn>
                 </v-col>
             </v-row>
 
@@ -134,6 +135,32 @@
                     </v-card-actions>
                 </v-card>
             </v-dialog>
+
+            <!-- 刪除商品的對話框 -->
+            <v-dialog v-model="showDeleteProductForm" max-width="500">
+                <v-card>
+                    <v-card-title>
+                        <span class="headline">刪除商品</span>
+                    </v-card-title>
+                    <v-card-text>
+                        <v-form ref="deleteProductFormRef">
+                            <v-text-field
+                                label="商品ID"
+                                v-model="deleteProductForm.productId"
+                                type="number"
+                                required
+                            ></v-text-field>
+                        </v-form>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="showDeleteProductForm = false">
+                            取消
+                        </v-btn>
+                        <v-btn color="blue darken-1" text @click="deleteProduct">確認刪除</v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
         </v-container>
     </v-app>
 </template>
@@ -156,9 +183,7 @@ export default {
                 { title: "建立日期", key: "created_at" },
                 { title: "操作", key: "actions", sortable: false },
             ],
-            // 儲存每筆訂單目前所選狀態 { orderId: status }
             statusSelections: {},
-            // 訂單狀態選項（新增「運輸中」狀態）
             statusOptions: [
                 { value: "pending", text: "等待處理" },
                 { value: "processing", text: "處理中" },
@@ -166,21 +191,22 @@ export default {
                 { value: "completed", text: "完成" },
                 { value: "cancelled", text: "取消" },
             ],
-            // Tabs 控制，目前 activeTab 將以選中的 tab value (預設為 "all")
             activeTab: "all",
-            // 控制新增評論對話框顯示
             showReviewForm: false,
-            // 評論表單資料
             reviewForm: {
                 product_id: "",
                 reviewer_name: "",
                 content: "",
                 rating: 5,
             },
+            // 刪除商品對話框資料
+            showDeleteProductForm: false,
+            deleteProductForm: {
+                productId: "",
+            },
         };
     },
     computed: {
-        // 定義所有 Tabs，第一個為「全部」，其餘依據 statusOptions 建立
         tabs() {
             return [
                 { value: "all", text: "全部" },
@@ -195,7 +221,6 @@ export default {
         countOrders(status) {
             return this.orders.filter((order) => order.order_status === status).length;
         },
-        // 回傳根據 tab 過濾後的訂單清單；若 tab 為 all 則回傳全部
         filteredOrders(tabValue) {
             if (tabValue === "all") {
                 return this.orders;
@@ -224,7 +249,6 @@ export default {
                 });
                 if (response.data && response.data.orders) {
                     this.orders = response.data.orders;
-                    // 為每筆訂單初始化狀態選擇（若未設定則使用 order_status 或預設 'pending'）
                     this.orders.forEach((order) => {
                         if (!this.statusSelections[order.id]) {
                             this.statusSelections[order.id] = order.order_status || "pending";
@@ -245,58 +269,46 @@ export default {
                 hour: "2-digit",
                 minute: "2-digit",
             };
-            return new Date(dateStr).toLocaleDateString("zh-TW", options);
+            return new Date(dateStr).toLocaleString("zh-TW", options);
         },
-        viewOrder(orderId) {
-            this.$router.push(`/order/${orderId}`);
-        },
-        async updateStatus(orderId, newStatus) {
-            if (!newStatus) {
-                alert("請選擇訂單狀態");
-                return;
-            }
+        async updateStatus(orderId, status) {
             try {
                 await axios.put(
-                    `${this.$backendUrl}/api/admin/orders/${orderId}/status`,
-                    { order_status: newStatus },
+                    `${this.$backendUrl}/api/admin/orders/${orderId}`,
+                    { order_status: status },
                     { withCredentials: true }
                 );
-                alert("訂單狀態更新成功");
-                this.fetchOrders();
+                alert("訂單狀態更新成功！");
+                this.fetchOrders(); // 重新取得訂單
             } catch (error) {
                 console.error("更新訂單狀態失敗：", error);
-                alert("更新訂單狀態失敗");
             }
         },
-        async submitReview() {
+        async deleteProduct() {
             try {
-                await axios.post(`${this.$backendUrl}/api/reviews`, this.reviewForm, {
-                    withCredentials: true,
-                });
-                alert("評論送出成功");
-                this.showReviewForm = false;
-                // 清空評論表單
-                this.reviewForm = {
-                    product_id: "",
-                    reviewer_name: "",
-                    content: "",
-                    rating: 5,
-                };
+                await axios.delete(
+                    `${this.$backendUrl}/api/products/${this.deleteProductForm.productId}`,
+                    {
+                        withCredentials: true,
+                    }
+                );
+                alert("商品刪除成功");
+                this.showDeleteProductForm = false;
+                this.deleteProductForm.productId = "";
+                this.fetchOrders(); // 重新整理訂單列表或其他商品相關操作
             } catch (error) {
-                console.error("送出評論失敗：", error);
-                alert("送出評論失敗");
+                console.error("刪除商品失敗：", error);
+                alert("刪除商品失敗");
             }
         },
     },
-    async mounted() {
-        await this.fetchAdminUser();
-        if (this.adminUser) {
-            this.fetchOrders();
-        }
+    mounted() {
+        this.fetchAdminUser();
+        this.fetchOrders();
     },
 };
 </script>
 
 <style scoped>
-/* 如有需要請自行調整樣式 */
+/* 根據需要自定義樣式 */
 </style>

@@ -183,6 +183,8 @@ export default {
             categories: [], // 從後端取得的分類資料
             specifications: [], // 格式：[ { name: "", price: "" }, ... ]
             options: [], // 格式：[ { option_name: "", option_value: "" }, ... ]
+            adminUser: null,
+            loading: false,
         };
     },
     methods: {
@@ -195,8 +197,26 @@ export default {
                 this.categories = [];
             }
         },
+        async fetchAdminUser() {
+            this.loading = true;
+            try {
+                const response = await axios.get(`${this.$backendUrl}/api/admin/me`, {
+                    withCredentials: true,
+                });
+                this.adminUser = response.data.user;
+                if (!this.adminUser) {
+                    alert("您沒有管理員權限！");
+                    this.$router.push("/login");
+                }
+            } catch (error) {
+                console.error("管理員驗證失敗：", error);
+                alert("您沒有管理員權限！");
+                this.$router.push("/login");
+            } finally {
+                this.loading = false;
+            }
+        },
         handleFileChange() {
-            // 清空先前預覽
             this.imagePreviews = [];
             if (this.images && this.images.length) {
                 this.images.forEach((file) => {
@@ -255,7 +275,6 @@ export default {
                 });
                 formData.append("specifications", JSON.stringify(this.specifications));
                 formData.append("options", JSON.stringify(this.options));
-
                 const response = await axios.post(`${this.$backendUrl}/api/products`, formData, {
                     headers: {
                         "Content-Type": "multipart/form-data",
@@ -276,6 +295,7 @@ export default {
         },
     },
     mounted() {
+        this.fetchAdminUser();
         this.fetchCategories();
     },
 };
