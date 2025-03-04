@@ -12,7 +12,7 @@
                     <!-- 商品分類選擇，先讓用戶選擇分類 -->
                     <v-select
                         v-model="selectedCategory"
-                        :items="this.categories"
+                        :items="categories"
                         item-title="name"
                         item-value="id"
                         label="請選擇商品分類"
@@ -28,6 +28,16 @@
                         outlined
                         dense
                     ></v-text-field>
+                    <!-- 價格倍數輸入，預設 10 倍 -->
+                    <v-text-field
+                        label="價格倍數"
+                        v-model.number="priceMultiplier"
+                        type="number"
+                        min="1"
+                        outlined
+                        dense
+                        class="mb-4"
+                    ></v-text-field>
                     <v-btn color="primary" class="mt-4" @click="collectProduct"> 採集商品 </v-btn>
                     <v-alert v-if="error" type="error" class="mt-4" dismissible>
                         {{ error }}
@@ -37,19 +47,7 @@
                     <div v-if="collectedData" class="mt-4">
                         <v-card outlined class="mb-4">
                             <v-card-title>採集結果預覽</v-card-title>
-                            {{ this.collectedData }}
-                            <!-- <v-card-text>
-                                <div><strong>商品名稱：</strong> {{ collectedData.name }}</div>
-                                <div><strong>價格：</strong> {{ collectedData.price }}</div>
-                                <div>
-                                    <strong>商品介紹：</strong>
-                                    <div v-html="collectedData.description"></div>
-                                </div>
-                                <div class="mt-2">
-                                    <strong>主圖：</strong>
-                                    <v-img :src="collectedData.image_url" max-width="200"></v-img>
-                                </div>
-                            </v-card-text> -->
+                            {{ collectedData }}
                         </v-card>
                         <!-- 顯示已選分類名稱 -->
                         <div>
@@ -67,14 +65,14 @@
 <script>
 import axios from "axios";
 
-// 轉換 1688 API 回傳資料為符合上架格式的函式
-function transform1688Product(data) {
+// 修改轉換函式，加入 multiplier 參數
+function transform1688Product(data, multiplier = 10) {
     const item = data.item;
     const product = {};
     console.log(item);
-    // 基本資料
+    // 基本資料：使用指定的價格倍數
     product.name = item.title || "";
-    product.price = item.price * 10 || "";
+    product.price = item.price * multiplier || "";
     product.description = item.desc || "";
     product.image_url = item.pic_url || "";
 
@@ -125,6 +123,7 @@ export default {
             error: null,
             categories: [], // 從後端取得的所有分類資料
             selectedCategory: null, // 用戶選擇的分類（整個物件）
+            priceMultiplier: 10, // 價格倍數，預設 10
         };
     },
     methods: {
@@ -135,7 +134,6 @@ export default {
                 console.log(this.categories);
             } catch (error) {
                 console.error("取得分類資料失敗:", error);
-                // this.categories = [];
             }
         },
         async collectProduct() {
@@ -155,8 +153,8 @@ export default {
                         withCredentials: true,
                     }
                 );
-                // 將原始資料轉換成符合上架格式
-                this.collectedData = transform1688Product(response.data.data);
+                // 傳入指定的價格倍數進行轉換
+                this.collectedData = transform1688Product(response.data.data, this.priceMultiplier);
                 // 將採集資料的分類欄位設為所選分類的 id
                 if (this.selectedCategory && this.selectedCategory.id) {
                     this.collectedData.category_id = this.selectedCategory.id;
