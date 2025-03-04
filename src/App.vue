@@ -74,10 +74,22 @@
             <router-view></router-view>
         </v-main>
 
-        <!-- Footer (非固定，隨內容延伸) -->
+        <!-- Footer -->
         <v-footer :color="primaryColor" dark>
             <v-col class="text-center"> &copy; 2025 {{ shopName }}. All rights reserved. </v-col>
         </v-footer>
+        <v-fab
+            :absolute="false"
+            :app="true"
+            color="primary"
+            :location="'right bottom'"
+            size="x-large"
+            icon="mdi-message-text"
+            variant="flat"
+            @click="openChat"
+        ></v-fab>
+        <!-- 右下角固定浮動對話按鈕 -->
+
     </v-app>
 </template>
 
@@ -105,6 +117,10 @@ export default {
         },
         topCategories() {
             return this.categories.filter((cat) => !cat.parent_id || cat.parent_id === "");
+        },
+        // 從環境變數中讀取對話網址
+        chatUrl() {
+            return import.meta.env.VITE_CHAT_URL || "https://default-chat-url.com";
         },
     },
     methods: {
@@ -152,6 +168,10 @@ export default {
                 console.error("登出失敗:", error);
             }
         },
+        openChat() {
+            // 以新視窗開啟對話網址
+            window.open(this.chatUrl, "_blank");
+        },
     },
     mounted() {
         this.fetchCurrentUser();
@@ -181,5 +201,12 @@ export default {
 }
 .category-col {
     position: relative;
+}
+/* 右下角固定對話按鈕 */
+.chat-button {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 1000;
 }
 </style>
