@@ -98,7 +98,7 @@
                                     <v-number-input
                                         control-variant="split"
                                         v-model.number="orderQuantity"
-                                        min="1"
+                                        :min="1"
                                         density="compact"
                                     ></v-number-input>
                                 </v-col>

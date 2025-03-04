@@ -5,7 +5,7 @@
             <v-row class="mb-4" justify="space-between">
                 <v-col cols="12" md="6">
                     <v-btn color="primary" @click="$router.push('/collect')" class="mr-2">
-                        1688採集上架
+                        自動採集上架
                     </v-btn>
                     <v-btn color="secondary" @click="$router.push('/productCreate')" class="mr-2">
                         手動採集上架

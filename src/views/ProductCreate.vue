@@ -17,7 +17,7 @@
                         <v-select
                             v-model="form.category_id"
                             :items="categories"
-                            item-text="name"
+                            item-title="name"
                             item-value="id"
                             label="分類"
                             required

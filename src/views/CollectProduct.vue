@@ -3,61 +3,173 @@
         <v-container>
             <v-row>
                 <v-col cols="12">
-                    <v-btn color="primary" @click="$router.go(-1)" class="mb-4"> 返回 </v-btn>
+                    <v-btn color="primary" @click="$router.go(-1)" class="mb-4">返回</v-btn>
                 </v-col>
             </v-row>
-            <v-card class="pa-4">
-                <v-card-title>產品採集 - 1688</v-card-title>
-                <v-card-text>
-                    <!-- 商品分類選擇，先讓用戶選擇分類 -->
-                    <v-select
-                        v-model="selectedCategory"
-                        :items="categories"
-                        item-title="name"
-                        item-value="id"
-                        label="請選擇商品分類"
-                        outlined
-                        dense
-                        class="mb-4"
-                        return-object
-                    ></v-select>
-                    <!-- 產品連結輸入 -->
-                    <v-text-field
-                        label="產品連結"
-                        v-model="productLink"
-                        outlined
-                        dense
-                    ></v-text-field>
-                    <!-- 價格倍數輸入，預設 10 倍 -->
-                    <v-text-field
-                        label="價格倍數"
-                        v-model.number="priceMultiplier"
-                        type="number"
-                        min="1"
-                        outlined
-                        dense
-                        class="mb-4"
-                    ></v-text-field>
-                    <v-btn color="primary" class="mt-4" @click="collectProduct"> 採集商品 </v-btn>
-                    <v-alert v-if="error" type="error" class="mt-4" dismissible>
-                        {{ error }}
-                    </v-alert>
-
-                    <!-- 採集結果預覽 -->
-                    <div v-if="collectedData" class="mt-4">
-                        <v-card outlined class="mb-4">
-                            <v-card-title>採集結果預覽</v-card-title>
-                            {{ collectedData }}
-                        </v-card>
-                        <!-- 顯示已選分類名稱 -->
-                        <div>
-                            <strong>所選分類：</strong>
-                            <span>{{ selectedCategory ? selectedCategory.name : "" }}</span>
-                        </div>
-                        <v-btn color="success" class="mt-4" @click="uploadProduct"> 上傳 </v-btn>
-                    </div>
-                </v-card-text>
-            </v-card>
+            <!-- 分頁選單：'one' 代表 1688，'two' 代表 京東 -->
+            <v-tabs v-model="tab" background-color="primary" dark>
+                <v-tab value="one">1688採集</v-tab>
+                <v-tab value="two">京東採集</v-tab>
+            </v-tabs>
+            <v-tabs-window v-model="tab">
+                <!-- 1688 採集分頁 -->
+                <v-tabs-window-item value="one">
+                    <v-card class="pa-4 mt-4">
+                        <v-card-title>產品採集 - 1688</v-card-title>
+                        <v-card-text>
+                            <!-- 商品分類選擇 -->
+                            <v-select
+                                v-model="selectedCategory"
+                                :items="categories"
+                                item-title="name"
+                                item-value="id"
+                                label="請選擇商品分類"
+                                outlined
+                                dense
+                                class="mb-4"
+                                return-object
+                            ></v-select>
+                            <!-- 產品連結輸入 -->
+                            <v-text-field
+                                label="產品連結"
+                                v-model="productLink"
+                                outlined
+                                dense
+                                class="mb-4"
+                            ></v-text-field>
+                            <!-- 價格欄位：原價、倍數、賣價（皆一直顯示） -->
+                            <v-row>
+                                <v-col cols="4">
+                                    <v-text-field
+                                        label="原價"
+                                        :value="collectedData ? collectedData.originalPrice : ''"
+                                        readonly
+                                        outlined
+                                        dense
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col cols="4">
+                                    <v-text-field
+                                        label="倍數"
+                                        v-model.number="priceMultiplier"
+                                        type="number"
+                                        :min="1"
+                                        outlined
+                                        dense
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col cols="4">
+                                    <v-text-field
+                                        label="賣價"
+                                        v-model.number="sellingPrice"
+                                        type="number"
+                                        outlined
+                                        dense
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-btn color="primary" class="mt-4" @click="collectProduct">
+                                採集商品
+                            </v-btn>
+                            <v-alert v-if="error" type="error" class="mt-4" dismissible>
+                                {{ error }}
+                            </v-alert>
+                            <!-- 採集結果預覽 -->
+                            <div v-if="collectedData" class="mt-4">
+                                <v-card outlined class="mb-4">
+                                    <v-card-title>採集結果預覽</v-card-title>
+                                    {{ collectedData }}
+                                </v-card>
+                                <div>
+                                    <strong>所選分類：</strong>
+                                    <span>{{ selectedCategory ? selectedCategory.name : "" }}</span>
+                                </div>
+                                <v-btn color="success" class="mt-4" @click="uploadProduct">
+                                    上傳
+                                </v-btn>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-tabs-window-item>
+                <!-- 京東 採集分頁 -->
+                <v-tabs-window-item value="two">
+                    <v-card class="pa-4 mt-4">
+                        <v-card-title>產品採集 - 京東</v-card-title>
+                        <v-card-text>
+                            <!-- 同上，共用變數 -->
+                            <v-select
+                                v-model="selectedCategory"
+                                :items="categories"
+                                item-title="name"
+                                item-value="id"
+                                label="請選擇商品分類"
+                                outlined
+                                dense
+                                class="mb-4"
+                                return-object
+                            ></v-select>
+                            <v-text-field
+                                label="產品連結"
+                                v-model="productLink"
+                                outlined
+                                dense
+                                class="mb-4"
+                            ></v-text-field>
+                            <!-- 三格價格欄位 -->
+                            <v-row>
+                                <v-col cols="4">
+                                    <v-text-field
+                                        label="原價"
+                                        :value="collectedData ? collectedData.originalPrice : ''"
+                                        readonly
+                                        outlined
+                                        dense
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col cols="4">
+                                    <v-text-field
+                                        label="倍數"
+                                        v-model.number="priceMultiplier"
+                                        type="number"
+                                        :min="1"
+                                        outlined
+                                        dense
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col cols="4">
+                                    <v-text-field
+                                        label="賣價"
+                                        v-model.number="sellingPrice"
+                                        type="number"
+                                        outlined
+                                        dense
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-btn color="primary" class="mt-4" @click="collectProduct">
+                                採集商品
+                            </v-btn>
+                            <v-alert v-if="error" type="error" class="mt-4" dismissible>
+                                {{ error }}
+                            </v-alert>
+                            <!-- 採集結果預覽 -->
+                            <div v-if="collectedData" class="mt-4">
+                                <v-card outlined class="mb-4">
+                                    <v-card-title>採集結果預覽</v-card-title>
+                                    {{ collectedData }}
+                                </v-card>
+                                <div>
+                                    <strong>所選分類：</strong>
+                                    <span>{{ selectedCategory ? selectedCategory.name : "" }}</span>
+                                </div>
+                                <v-btn color="success" class="mt-4" @click="uploadProduct">
+                                    上傳
+                                </v-btn>
+                            </div>
+                        </v-card-text>
+                    </v-card>
+                </v-tabs-window-item>
+            </v-tabs-window>
         </v-container>
     </v-app>
 </template>
@@ -65,52 +177,71 @@
 <script>
 import axios from "axios";
 
-// 修改轉換函式，加入 multiplier 參數
+// 1688 轉換函式
 function transform1688Product(data, multiplier = 10) {
     const item = data.item;
     const product = {};
-    console.log(item);
-    // 基本資料：使用指定的價格倍數
+    product.originalPrice = item.price || 0;
     product.name = item.title || "";
-    product.price = item.price * multiplier || "";
+    product.price = product.originalPrice * multiplier;
     product.description = item.desc || "";
     product.image_url = item.pic_url || "";
+    product.images = Array.isArray(item.item_imgs)
+        ? item.item_imgs.map((img) => ({ image_url: img.url }))
+        : [];
+    product.specifications =
+        data.skus && data.skus.sku && Array.isArray(data.skus.sku)
+            ? data.skus.sku.map((sku) => ({
+                  name: sku.properties_name || "",
+                  price: sku.price || "",
+              }))
+            : [];
+    product.options = item.props_name
+        ? item.props_name
+              .split(";")
+              .filter((str) => str.trim() !== "")
+              .map((str) => {
+                  const parts = str.split(":");
+                  return {
+                      option_name: parts[2] || "",
+                      option_value: parts[3] || "",
+                  };
+              })
+        : [];
+    return product;
+}
 
-    console.log(data);
-    // 圖片集合
-    if (Array.isArray(item.item_imgs)) {
-        product.images = item.item_imgs.map((img) => ({ image_url: img.url }));
-    } else {
-        product.images = [];
-    }
-    console.log(product.images);
-
-    // 規格：以 skus.sku 陣列轉換成 { name, price }
-    if (data.skus && data.skus.sku && Array.isArray(data.skus.sku)) {
-        product.specifications = data.skus.sku.map((sku) => ({
-            name: sku.properties_name || "",
-            price: sku.price || "",
-        }));
-    } else {
-        product.specifications = [];
-    }
-
-    // 選項：從 item.props_name 字串解析
-    if (item.props_name) {
-        product.options = item.props_name
-            .split(";")
-            .filter((str) => str.trim() !== "")
-            .map((str) => {
-                const parts = str.split(":");
-                return {
-                    option_name: parts[2] || "",
-                    option_value: parts[3] || "",
-                };
-            });
-    } else {
-        product.options = [];
-    }
-
+// 京東 轉換函式
+function transformJDProduct(data, multiplier = 10) {
+    const item = data.item || {};
+    const product = {};
+    product.originalPrice = parseFloat(item.price) || 0;
+    product.name = item.title || "";
+    product.price = product.originalPrice * multiplier;
+    product.description = item.desc || "";
+    product.image_url = item.pic_url || "";
+    product.images = Array.isArray(item.item_imgs)
+        ? item.item_imgs.map((img) => ({ image_url: img.url }))
+        : [];
+    product.specifications =
+        data.skus && data.skus.sku && Array.isArray(data.skus.sku)
+            ? data.skus.sku.map((sku) => ({
+                  name: sku.properties_name || "",
+                  price: sku.price || "",
+              }))
+            : [];
+    product.options = item.props_name
+        ? item.props_name
+              .split(";")
+              .filter((str) => str.trim() !== "")
+              .map((str) => {
+                  const parts = str.split(":");
+                  return {
+                      option_name: parts[2] || "",
+                      option_value: parts[3] || "",
+                  };
+              })
+        : [];
     return product;
 }
 
@@ -118,12 +249,17 @@ export default {
     name: "CollectProduct",
     data() {
         return {
+            categories: [],
             productLink: "",
-            collectedData: null, // 採集並轉換後的商品資料
+            collectedData: null,
             error: null,
-            categories: [], // 從後端取得的所有分類資料
-            selectedCategory: null, // 用戶選擇的分類（整個物件）
-            priceMultiplier: 10, // 價格倍數，預設 10
+            selectedCategory: null,
+            // 倍數預設為 10
+            priceMultiplier: 10,
+            // 賣價預設為空，採集後初始設為原價 * 倍數
+            sellingPrice: null,
+            // 分頁狀態：'one' 為 1688，'two' 為 京東
+            tab: "one",
         };
     },
     methods: {
@@ -131,11 +267,11 @@ export default {
             try {
                 const response = await axios.get(`${this.$backendUrl}/api/categories`);
                 this.categories = response.data.categories;
-                console.log(this.categories);
             } catch (error) {
                 console.error("取得分類資料失敗:", error);
             }
         },
+        // 共用採集方法：根據 tab 選擇對應 API 與轉換函式
         async collectProduct() {
             this.error = null;
             this.collectedData = null;
@@ -144,53 +280,62 @@ export default {
                 return;
             }
             try {
+                const endpoint = this.tab === "one" ? "/api/collect/1688" : "/api/collect/jd";
                 const response = await axios.post(
-                    `${this.$backendUrl}/api/collect/1688`,
-                    {
-                        link: this.productLink,
-                    },
-                    {
-                        withCredentials: true,
-                    }
+                    `${this.$backendUrl}${endpoint}`,
+                    { link: this.productLink },
+                    { withCredentials: true }
                 );
-                // 傳入指定的價格倍數進行轉換
-                this.collectedData = transform1688Product(response.data.data, this.priceMultiplier);
-                // 將採集資料的分類欄位設為所選分類的 id
+                const transformFn = this.tab === "one" ? transform1688Product : transformJDProduct;
+                let data = transformFn(response.data.data, this.priceMultiplier);
                 if (this.selectedCategory && this.selectedCategory.id) {
-                    this.collectedData.category_id = this.selectedCategory.id;
+                    data.category_id = this.selectedCategory.id;
                 }
-                console.log(this.collectedData);
+                this.collectedData = data;
+                // 初始賣價以原價 * 倍數計算
+                this.sellingPrice = data.price;
             } catch (err) {
                 console.error(err);
                 this.error = err.response?.data?.error || "採集失敗";
             }
         },
+        // 共用上傳方法：上傳前將使用者自訂的賣價寫入
         async uploadProduct() {
-            // 檢查必填欄位：name, category_id, price, description
             if (
+                !this.collectedData ||
                 !this.collectedData.name ||
                 !this.collectedData.category_id ||
                 !this.collectedData.price ||
-                !this.collectedData.description
+                (this.tab === "one" && !this.collectedData.description)
             ) {
-                this.error = "請確認商品資料（名稱、分類、價格、介紹）皆已填寫";
+                this.error =
+                    this.tab === "one"
+                        ? "請確認商品資料（名稱、分類、價格、介紹）皆已填寫"
+                        : "請確認商品資料（名稱、分類、價格）皆已填寫";
                 return;
             }
+            // 將使用者修改的賣價寫回採集資料
+            this.collectedData.price = this.sellingPrice;
             try {
                 const response = await axios.post(
                     `${this.$backendUrl}/api/collect/upload`,
                     this.collectedData,
-                    {
-                        withCredentials: true,
-                    }
+                    { withCredentials: true }
                 );
                 alert("上傳成功，產品ID：" + response.data.productId);
-                // 重置
                 this.productLink = "";
                 this.collectedData = null;
             } catch (err) {
                 console.error(err);
                 alert("上傳失敗，請稍後再試");
+            }
+        },
+    },
+    watch: {
+        // 當 multiplier 改變時，更新賣價（自動計算覆蓋原來的賣價）
+        priceMultiplier(newVal) {
+            if (this.collectedData) {
+                this.sellingPrice = this.collectedData.originalPrice * newVal;
             }
         },
     },
@@ -201,5 +346,5 @@ export default {
 </script>
 
 <style scoped>
-/* 你可以根據需要進一步調整樣式 */
+/* 根據需求進一步調整樣式 */
 </style>
