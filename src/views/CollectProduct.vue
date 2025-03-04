@@ -146,9 +146,15 @@ export default {
                 return;
             }
             try {
-                const response = await axios.post(`${this.$backendUrl}/api/collect/1688`, {
-                    link: this.productLink,
-                });
+                const response = await axios.post(
+                    `${this.$backendUrl}/api/collect/1688`,
+                    {
+                        link: this.productLink,
+                    },
+                    {
+                        withCredentials: true,
+                    }
+                );
                 // 將原始資料轉換成符合上架格式
                 this.collectedData = transform1688Product(response.data.data);
                 // 將採集資料的分類欄位設為所選分類的 id
