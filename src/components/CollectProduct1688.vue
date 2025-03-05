@@ -105,7 +105,6 @@ function transform1688Product(data, multiplier = 10) {
                     if (tokens.length >= 4) {
                         // 組合 spec 名稱與值，例如 "颜色:塞巴莉莉【裙+手套+头饰+颈圈+蝴蝶结】"
                         const specText = tokens[2] + ":" + tokens[3];
-                        // 如果此 spec 尚未收錄，就加入，並用當前 SKU 的價格作為參考
                         if (!specSet.has(specText)) {
                             specSet.set(specText, { name: specText, price: skuPrice });
                         }
@@ -132,15 +131,17 @@ function transform1688Product(data, multiplier = 10) {
         // 將唯一的 spec 與 option 塞入產品資料
         product.specifications = Array.from(specSet.values());
         product.options = Array.from(optionSet.values());
-        // 以所有 SKU 中最低的價格作為產品原價與售價
-        product.originalPrice = Math.min(...skuPrices);
+        // 以所有 SKU 中最低的價格作為產品原價與售價，並做四捨五入
+        const minPrice = Math.min(...skuPrices);
+        product.originalPrice = Math.round(minPrice);
         product.price = product.originalPrice;
     } else {
-        // 若無 SKU，採用 item 的價格
+        // 若無 SKU，採用 item 上的價格，並先轉為數字後四捨五入
         product.options = [];
         product.specifications = [];
-        product.originalPrice = item.price ? parseFloat(item.price) : 0;
-        product.price = product.originalPrice * multiplier;
+        const basePrice = item.price ? parseFloat(item.price) : 0;
+        product.originalPrice = Math.round(basePrice);
+        product.price = Math.round(product.originalPrice * multiplier);
     }
     return product;
 }

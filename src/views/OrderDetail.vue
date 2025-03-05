@@ -113,7 +113,7 @@ export default {
             loading: false,
             isAdmin: false,
             newTrackingNumber: "",
-            // 修改後的 itemHeaders：將規格與選項欄位合併成「備註」
+            // 更新後的 itemHeaders，備註欄位將呈現規格與選項資訊
             itemHeaders: [
                 { title: "商品圖", key: "productImage" },
                 { title: "商品名稱", key: "productName" },
@@ -132,10 +132,11 @@ export default {
                 const response = await axios.get(`${this.$backendUrl}/api/orders/${orderId}`, {
                     withCredentials: true,
                 });
+                console.log(response.data);
                 if (response.data) {
                     this.order = response.data.order;
                     this.orderItems = response.data.orderItems || [];
-                    // 針對每個訂單項目，取得商品詳細資料
+                    // 取得每筆訂單項目的商品詳細資料
                     await Promise.all(
                         this.orderItems.map(async (item) => {
                             try {
@@ -204,38 +205,20 @@ export default {
         formatPrice(value) {
             return `$${parseFloat(value).toFixed(2)}`;
         },
-        viewOrder(orderId) {
-            this.$router.push(`/order/${orderId}`);
-        },
-        // 將規格與選項合併成備註字串
+        // 將 spec 與 option 合併為備註內容
         formatRemark(item) {
-            let remark = "";
-            // 若存在 specification_id，加入其內容
-            if (item.specification_id) {
-                remark += item.specification_id;
+            const remarks = [];
+            if (item.spec_name) {
+                remarks.push(`規格: ${item.spec_name}`);
             }
-            let optionsStr = "";
-            if (item.options) {
-                try {
-                    // 嘗試解析 JSON 字串
-                    const optionsObj = JSON.parse(item.options);
-                    // 僅取值部分，並用逗號分隔
-                    optionsStr = Object.values(optionsObj).join(", ");
-                } catch (e) {
-                    // 若解析失敗，直接使用原值
-                    optionsStr = item.options;
-                }
+            if (item.option_name && item.option_value) {
+                remarks.push(`選項: ${item.option_name}:${item.option_value}`);
             }
-            if (remark && optionsStr) {
-                remark += ", " + optionsStr;
-            } else if (!remark && optionsStr) {
-                remark = optionsStr;
-            }
-            return remark;
+            return remarks.join("； ");
         },
     },
     async mounted() {
-        // 檢查使用者是否為 admin (可依實際需求調整)
+        // 檢查是否為 admin (依需求調整)
         try {
             const meRes = await axios.get(`${this.$backendUrl}/api/auth/me`, {
                 withCredentials: true,

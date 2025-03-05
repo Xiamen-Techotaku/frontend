@@ -67,7 +67,6 @@ export default {
         return {
             orders: [],
             loading: false,
-            // 修改後的 headers，多一個狀態欄位 (order_status)
             headers: [
                 { title: "訂單編號", key: "id" },
                 { title: "取件姓名", key: "customer_name" },
@@ -78,9 +77,8 @@ export default {
                 { title: "貨運單號", key: "tracking_number" },
                 { title: "操作", key: "actions", sortable: false },
             ],
-            // Tabs 初始以 "all" 為預設分頁
             activeTab: "all",
-            // tabs 陣列新增「運輸中」狀態，順序為全部、等待處理、處理中、運輸中、完成、取消
+            // tabs 順序為全部、等待處理、處理中、運輸中、完成、取消
             tabs: [
                 { value: "all", text: "全部" },
                 { value: "pending", text: "等待處理" },

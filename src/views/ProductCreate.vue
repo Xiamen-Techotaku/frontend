@@ -264,6 +264,10 @@ export default {
         },
         async handleSubmit() {
             try {
+                // 先檢查價格，若有小數則四捨五入
+                let price = parseFloat(this.form.price);
+                this.form.price = Math.round(price).toString();
+
                 const formData = new FormData();
                 formData.append("name", this.form.name);
                 formData.append("category_id", this.form.category_id);
@@ -275,6 +279,7 @@ export default {
                 });
                 formData.append("specifications", JSON.stringify(this.specifications));
                 formData.append("options", JSON.stringify(this.options));
+
                 const response = await axios.post(`${this.$backendUrl}/api/products`, formData, {
                     headers: {
                         "Content-Type": "multipart/form-data",

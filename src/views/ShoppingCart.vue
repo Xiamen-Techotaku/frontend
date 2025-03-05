@@ -192,11 +192,23 @@ export default {
                         }
                     }
 
+                    // 處理選項：如果有 option_id，就從產品的 options 中找出對應項目
                     let options = {};
-                    try {
-                        options = JSON.parse(item.options);
-                    } catch (e) {
-                        options = item.options;
+                    if (item.optionId || item.option_id) {
+                        const optId = item.optionId || item.option_id;
+                        if (product.options && Array.isArray(product.options)) {
+                            const opt = product.options.find((o) => o.id === optId);
+                            if (opt) {
+                                options = { [opt.option_name]: opt.option_value };
+                            }
+                        }
+                    } else {
+                        // 如果沒有 option_id，嘗試解析原本存入的 JSON 格式
+                        try {
+                            options = JSON.parse(item.options);
+                        } catch (e) {
+                            options = item.options;
+                        }
                     }
 
                     items.push({

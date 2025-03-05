@@ -67,7 +67,7 @@
                                 class="my-4"
                             >
                                 <div
-                                    v-for="(values, group) in optionGroups"
+                                    v-for="(options, group) in optionGroups"
                                     :key="group"
                                     class="mb-2"
                                 >
@@ -79,13 +79,13 @@
                                         mandatory
                                     >
                                         <v-chip
-                                            v-for="(value, index) in values"
-                                            :key="index"
-                                            :value="value"
+                                            v-for="option in options"
+                                            :key="option.id"
+                                            :value="option.id"
                                             outlined
                                             class="spec-chip"
                                         >
-                                            {{ value }}
+                                            {{ option.option_value }}
                                         </v-chip>
                                     </v-chip-group>
                                 </div>
@@ -106,7 +106,7 @@
                                     <v-btn color="primary" class="mr-2" @click="addToCart">
                                         放入購物車
                                     </v-btn>
-                                    <v-btn color="error" @click="buyNow">立即購買</v-btn>
+                                    <v-btn color="error" @click="buyNow"> 立即購買 </v-btn>
                                 </v-col>
                             </v-row>
                         </v-card-text>
@@ -173,7 +173,7 @@ export default {
             },
             loading: true,
             selectedSpecId: null, // 保存規格 id
-            selectedOptions: {}, // 每個選項群只保存一個值
+            selectedOptions: {}, // 每個選項群只保存選中的 option id (例如：{ "尺碼": 12 })
             orderQuantity: 1,
             tab: "one", // 分頁控制，預設顯示商品內容
             reviews: [], // 儲存評論資料
@@ -204,12 +204,11 @@ export default {
             const groups = {};
             if (this.product.options && this.product.options.length) {
                 this.product.options.forEach((opt) => {
+                    // 假設每個 option 包含 id, option_name, option_value
                     if (!groups[opt.option_name]) {
                         groups[opt.option_name] = [];
                     }
-                    if (!groups[opt.option_name].includes(opt.option_value)) {
-                        groups[opt.option_name].push(opt.option_value);
-                    }
+                    groups[opt.option_name].push(opt);
                 });
             }
             return groups;
@@ -217,7 +216,7 @@ export default {
     },
     methods: {
         formatPrice(value) {
-            return `$${parseFloat(value).toFixed(2)}`;
+            return `$${Math.round(parseFloat(value))}`;
         },
         async fetchProduct() {
             const productId = this.$route.params.id;
@@ -237,13 +236,15 @@ export default {
             }
         },
         autoSelectSingle() {
+            // 如果有規格，預設選第一個
             if (this.product.specifications && this.product.specifications.length > 0) {
                 this.selectedSpecId = this.product.specifications[0].id;
             }
+            // 選項部分，對於每個選項群預設選第一個選項
             for (const group in this.optionGroups) {
                 const values = this.optionGroups[group];
                 if (values.length > 0) {
-                    this.selectedOptions[group] = values[0];
+                    this.$set(this.selectedOptions, group, values[0].id);
                 }
             }
         },
@@ -252,10 +253,17 @@ export default {
         },
         async addToCart() {
             try {
+                // 由於後端 carts 改為接收 optionId (單一選項)
+                // 若有多個選項群，這裡以第一個群組的選擇為準
+                let optionId = null;
+                const groups = Object.keys(this.selectedOptions);
+                if (groups.length > 0) {
+                    optionId = this.selectedOptions[groups[0]];
+                }
                 const payload = {
-                    productId: this.product.id, // 內部使用，不在畫面上顯示
+                    productId: this.product.id, // 內部使用
                     specificationId: this.selectedSpec ? this.selectedSpec.id : null,
-                    options: this.selectedOptions,
+                    optionId, // 傳送選項的 id
                     quantity: this.orderQuantity,
                 };
                 await axios.post(`${this.$backendUrl}/api/cart`, payload, {
