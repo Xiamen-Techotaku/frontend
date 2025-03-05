@@ -84,52 +84,64 @@ function transform1688Product(data, multiplier = 10) {
         : [];
 
     if (item.skus && item.skus.sku && Array.isArray(item.skus.sku) && item.skus.sku.length) {
-        product.options = [];
-        product.specifications = [];
+        // 用來收集唯一的 spec 與 option
+        let specSet = new Map();
+        let optionSet = new Map();
+        let skuPrices = [];
 
-        // 從第一筆 sku 擷取 options (預設各 sku 的 option 定義皆相同)
-        const firstSkuProps = item.skus.sku[0].properties_name || "";
-        const parts = firstSkuProps.split(";");
-        parts.forEach((part) => {
-            const tokens = part.split(":");
-            // tokens[0] 為 "0" 的為 option
-            if (tokens[0] === "0") {
-                product.options.push({
-                    option_name: tokens[2] || "",
-                    option_value: tokens[3] || "",
-                });
-            }
-        });
-
-        // 每筆 sku 處理規格與價格資訊
+        // 遍歷每筆 SKU
         item.skus.sku.forEach((sku) => {
+            // 取出該 SKU 的價格（乘上倍數）
+            const skuPrice = sku.price ? parseFloat(sku.price) * multiplier : 0;
+            skuPrices.push(skuPrice);
+
             const skuProps = sku.properties_name || "";
-            // 取出前綴為 "1" 的 spec 資料
-            const specParts = skuProps.split(";").filter((part) => part.startsWith("1:"));
-            let specDetail = "";
-            specParts.forEach((part) => {
-                const tokens = part.split(":");
-                if (tokens.length >= 4) {
-                    specDetail += tokens[2] + ":" + tokens[3] + " ";
-                }
-            });
-            product.specifications.push({
-                name: specDetail.trim(),
-                price: sku.price ? parseFloat(sku.price) * multiplier : 0,
-            });
+            const parts = skuProps.split(";");
+            // 處理 spec（前綴 "0:"）
+            parts
+                .filter((part) => part.startsWith("0:"))
+                .forEach((part) => {
+                    const tokens = part.split(":");
+                    if (tokens.length >= 4) {
+                        // 組合 spec 名稱與值，例如 "颜色:塞巴莉莉【裙+手套+头饰+颈圈+蝴蝶结】"
+                        const specText = tokens[2] + ":" + tokens[3];
+                        // 如果此 spec 尚未收錄，就加入，並用當前 SKU 的價格作為參考
+                        if (!specSet.has(specText)) {
+                            specSet.set(specText, { name: specText, price: skuPrice });
+                        }
+                    }
+                });
+            // 處理 option（前綴 "1:"）
+            parts
+                .filter((part) => part.startsWith("1:"))
+                .forEach((part) => {
+                    const tokens = part.split(":");
+                    if (tokens.length >= 4) {
+                        // 組合 option 的名稱與值，例如 "尺码:S"
+                        const optText = tokens[2] + ":" + tokens[3];
+                        if (!optionSet.has(optText)) {
+                            optionSet.set(optText, {
+                                option_name: tokens[2] || "",
+                                option_value: tokens[3] || "",
+                            });
+                        }
+                    }
+                });
         });
 
-        // 以所有 sku 中最低的價格作為原價與售價的基準
-        const skuPrices = product.specifications.map((s) => s.price);
+        // 將唯一的 spec 與 option 塞入產品資料
+        product.specifications = Array.from(specSet.values());
+        product.options = Array.from(optionSet.values());
+        // 以所有 SKU 中最低的價格作為產品原價與售價
         product.originalPrice = Math.min(...skuPrices);
         product.price = product.originalPrice;
     } else {
+        // 若無 SKU，採用 item 的價格
         product.options = [];
         product.specifications = [];
         product.originalPrice = item.price ? parseFloat(item.price) : 0;
         product.price = product.originalPrice * multiplier;
     }
-
     return product;
 }
 

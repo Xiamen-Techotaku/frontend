@@ -56,7 +56,7 @@
                                         outlined
                                         class="spec-chip"
                                     >
-                                        {{ spec.name }} ({{ formatPrice(spec.price) }})
+                                        {{ spec.name }}
                                     </v-chip>
                                 </v-chip-group>
                             </div>
