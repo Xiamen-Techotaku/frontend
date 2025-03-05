@@ -89,7 +89,6 @@
             @click="openChat"
         ></v-fab>
         <!-- 右下角固定浮動對話按鈕 -->
-
     </v-app>
 </template>
 
@@ -98,6 +97,9 @@ import axios from "axios";
 export default {
     name: "App",
     data() {
+        /**
+         * @type {Array<{ id: number|string, parent_id?: number|string|null, name: string }>}
+         */
         return {
             currentUser: null,
             cartCount: 0,
@@ -173,19 +175,28 @@ export default {
             window.open(this.chatUrl, "_blank");
         },
     },
-    mounted() {
-        this.fetchCurrentUser();
-        this.fetchCartCount();
+    async mounted() {
+        await this.fetchCurrentUser();
+        // 只有使用者已登入時才刷新購物車
+        if (this.currentUser) {
+            this.fetchCartCount();
+            this.cartCountInterval = setInterval(this.fetchCartCount, 3000);
+        }
         this.fetchCategories();
-        this.cartCountInterval = setInterval(this.fetchCartCount, 3000);
     },
     unmounted() {
-        clearInterval(this.cartCountInterval);
+        if (this.cartCountInterval) {
+            clearInterval(this.cartCountInterval);
+        }
     },
 };
 </script>
 
-<style scoped>
+<style>
+body {
+    font-family: "Noto Sans TC", sans-serif;
+}
+
 .shop-name-link {
     text-decoration: none;
     color: inherit;

@@ -113,7 +113,6 @@ export default {
             loading: false,
             isAdmin: false,
             newTrackingNumber: "",
-            // 更新後的 itemHeaders，備註欄位將呈現規格與選項資訊
             itemHeaders: [
                 { title: "商品圖", key: "productImage" },
                 { title: "商品名稱", key: "productName" },
@@ -125,6 +124,24 @@ export default {
         };
     },
     methods: {
+        async fetchUser() {
+            try {
+                const response = await axios.get(`${this.$backendUrl}/api/auth/me`, {
+                    withCredentials: true,
+                });
+                if (response.data && response.data.user) {
+                    // 將後端回傳的使用者資料合併到 this.user
+                    this.user = {
+                        ...this.user,
+                        ...response.data.user,
+                    };
+                }
+            } catch (error) {
+                console.error("取得個人資料失敗：", error);
+                alert("請先登入！");
+                this.$router.push("/login");
+            }
+        },
         async fetchOrderDetail() {
             this.loading = true;
             try {
@@ -168,6 +185,9 @@ export default {
                 }
             } catch (error) {
                 console.error("取得訂單詳情失敗：", error);
+                if (error.response && error.response.status === 401) {
+                    this.$router.push("/login");
+                }
             } finally {
                 this.loading = false;
             }
@@ -189,7 +209,11 @@ export default {
                 this.fetchOrderDetail();
             } catch (error) {
                 console.error("更新單號失敗：", error);
-                alert("更新單號失敗，請稍後再試");
+                if (error.response && error.response.status === 401) {
+                    this.$router.push("/login");
+                } else {
+                    alert("更新單號失敗，請稍後再試");
+                }
             }
         },
         formatDate(dateStr) {
@@ -205,7 +229,6 @@ export default {
         formatPrice(value) {
             return `$${parseFloat(value).toFixed(2)}`;
         },
-        // 將 spec 與 option 合併為備註內容
         formatRemark(item) {
             const remarks = [];
             if (item.spec_name) {
@@ -217,18 +240,8 @@ export default {
             return remarks.join("； ");
         },
     },
-    async mounted() {
-        // 檢查是否為 admin (依需求調整)
-        try {
-            const meRes = await axios.get(`${this.$backendUrl}/api/auth/me`, {
-                withCredentials: true,
-            });
-            if (meRes.data && meRes.data.user && meRes.data.user.is_admin) {
-                this.isAdmin = true;
-            }
-        } catch (e) {
-            console.error("取得使用者資訊失敗：", e);
-        }
+    mounted() {
+        this.fetchUser();
         this.fetchOrderDetail();
     },
 };

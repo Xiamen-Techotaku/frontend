@@ -90,6 +90,24 @@ export default {
         };
     },
     methods: {
+        async fetchUser() {
+            try {
+                const response = await axios.get(`${this.$backendUrl}/api/auth/me`, {
+                    withCredentials: true,
+                });
+                if (response.data && response.data.user) {
+                    // 將後端回傳的使用者資料合併到 this.user
+                    this.user = {
+                        ...this.user,
+                        ...response.data.user,
+                    };
+                }
+            } catch (error) {
+                console.error("取得個人資料失敗：", error);
+                alert("請先登入！");
+                this.$router.push("/login");
+            }
+        },
         async fetchMyOrders() {
             this.loading = true;
             try {
@@ -131,6 +149,7 @@ export default {
         },
     },
     mounted() {
+        this.fetchUser();
         this.fetchMyOrders();
     },
 };

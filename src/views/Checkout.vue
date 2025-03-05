@@ -121,8 +121,13 @@ export default {
             console.log("submitOrder triggered");
             // 檢查必要欄位
             if (!this.customerName || !this.phone || !this.selectedStore) {
-                // 這裡可以用其他方式提示，但簡單 alert 仍然可以
                 alert("請填寫所有必要欄位");
+                return;
+            }
+            // 檢查手機號碼格式：09開頭的十碼數字
+            const phoneRegex = /^09\d{8}$/;
+            if (!phoneRegex.test(this.phone)) {
+                alert("請輸入有效的手機號碼");
                 return;
             }
             // 再次檢查超商資料是否完整
