@@ -56,7 +56,7 @@
                                         outlined
                                         class="spec-chip"
                                     >
-                                        {{ spec.name }}
+                                        {{ getDisplayText(spec.name) }}
                                     </v-chip>
                                 </v-chip-group>
                             </div>
@@ -85,7 +85,7 @@
                                             outlined
                                             class="spec-chip"
                                         >
-                                            {{ option.option_value }}
+                                            {{ getDisplayText(option.option_value) }}
                                         </v-chip>
                                     </v-chip-group>
                                 </div>
@@ -217,6 +217,13 @@ export default {
     methods: {
         formatPrice(value) {
             return `$${Math.round(parseFloat(value))}`;
+        },
+        // 取得冒號後的文字，如果沒有冒號則直接回傳原字串
+        getDisplayText(text) {
+            if (text && text.includes(":")) {
+                return text.split(":")[1].trim();
+            }
+            return text;
         },
         async fetchProduct() {
             const productId = this.$route.params.id;

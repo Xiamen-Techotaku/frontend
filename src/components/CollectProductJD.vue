@@ -72,6 +72,10 @@
 <script>
 import axios from "axios";
 
+function delay(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 // 京東 轉換函式，更新後根據主商品 id 與 sku_url 取得正確價格
 async function transformJDProduct(data, multiplier = 10, backendUrl, mainSkuId) {
     const item = data.item || {};
@@ -85,27 +89,23 @@ async function transformJDProduct(data, multiplier = 10, backendUrl, mainSkuId) 
 
     if (item.skus && item.skus.sku && Array.isArray(item.skus.sku) && item.skus.sku.length) {
         const skus = item.skus.sku;
-        // 處理每一筆 sku：若 sku_id 與 mainSkuId 相同，直接使用 jd API 回傳的價格
-        // 否則呼叫 /api/collect/jd_sku 取得正確價格
         const updatedSkus = await Promise.all(
             skus.map(async (sku) => {
                 const skuId = sku.sku_id;
                 let correctPrice;
                 if (skuId === mainSkuId) {
                     correctPrice = parseFloat(sku.price);
-                    console.log("相同");
+                    console.log("相同的 sku_id，直接使用價格");
                 } else {
+                    // 為了控制 QPS 為 1，每次呼叫前延遲 1 秒
+                    await delay(1500);
                     try {
-                        console.log(sku.sku_id);
                         const resp = await axios.post(
                             `${backendUrl}/api/collect/jd_sku`,
                             { link: sku.sku_url },
                             { withCredentials: true }
                         );
-
-                        console.log(resp);
-
-                        // 如果取得的資料有正確的價格則使用，否則 fallback
+                        console.log("jd_sku 回傳：", resp.data);
                         correctPrice =
                             resp.data.data && resp.data.data.item
                                 ? parseFloat(resp.data.data.item.price)
@@ -130,7 +130,6 @@ async function transformJDProduct(data, multiplier = 10, backendUrl, mainSkuId) 
                     if (tokens.length >= 4) {
                         const specText = tokens[2] + ":" + tokens[3];
                         if (!specSet.has(specText)) {
-                            // 更新價格乘上倍數後四捨五入
                             specSet.set(specText, {
                                 name: specText,
                                 price: Math.round(sku.price * multiplier),
@@ -261,6 +260,7 @@ export default {
             }
         },
     },
+
     watch: {
         priceMultiplier(newVal) {
             if (this.collectedData) {
