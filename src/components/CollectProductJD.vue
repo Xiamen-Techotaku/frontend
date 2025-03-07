@@ -24,7 +24,7 @@
                 <v-col cols="4">
                     <v-text-field
                         label="原價"
-                        :value="collectedData ? collectedData.originalPrice : ''"
+                        v-model="originalPrice"
                         readonly
                         outlined
                         dense
@@ -223,6 +223,18 @@ export default {
             progressMessage: "", // 採集進度訊息
         };
     },
+    computed: {
+        originalPrice: {
+            get() {
+                return this.collectedData ? this.collectedData.originalPrice : "";
+            },
+            set(value) {
+                if (this.collectedData) {
+                    this.collectedData.originalPrice = value;
+                }
+            },
+        },
+    },
     methods: {
         async collectProduct() {
             // 檢查是否選擇分類
@@ -262,8 +274,10 @@ export default {
                 if (this.selectedCategory && this.selectedCategory.id) {
                     data.category_id = this.selectedCategory.id;
                 }
+                // 將採集資料存入並根據原價及倍數更新賣價
                 this.collectedData = data;
-                this.sellingPrice = data.price;
+                this.sellingPrice = data.originalPrice * this.priceMultiplier;
+
                 // 更新進度進入描述採集
                 this.progressMessage = "採集商品描述中...";
                 await this.collectDescription();
