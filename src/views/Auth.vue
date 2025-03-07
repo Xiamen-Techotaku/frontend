@@ -114,27 +114,24 @@ export default {
         handleGoogleLogin() {
             window.location.href = `${this.$backendUrl}/api/auth/google`;
         },
-        async handleRegister() {
-            if (this.registerForm.password !== this.registerForm.confirmPassword) {
-                alert("密碼與確認密碼不相符");
-                return;
-            }
+        async handleLocalLogin() {
             try {
-                const response = await axios.post(`${this.$backendUrl}/api/auth/register`, {
-                    name: this.registerForm.name,
-                    email: this.registerForm.email,
-                    password: this.registerForm.password,
-                    confirmPassword: this.registerForm.confirmPassword,
-                });
-                alert("註冊成功");
-                console.log("註冊成功：", response.data);
-                // 註冊成功後切換到登入畫面
-                this.tab = 0;
+                const response = await axios.post(
+                    `${this.$backendUrl}/api/auth/login`,
+                    {
+                        email: this.loginForm.email,
+                        password: this.loginForm.password,
+                    },
+                    { withCredentials: true }
+                );
+                alert("登入成功");
+                // 導向根目錄後再重整頁面
+                this.$router.push("/").then(() => window.location.reload());
             } catch (error) {
-                console.error("註冊失敗：", error);
+                console.error("登入失敗：", error);
                 alert(
-                    (error.response && error.response.data && error.response.data.error) ||
-                        "註冊失敗"
+                    (error.response && error.response.data && error.response.data.message) ||
+                        "登入失敗"
                 );
             }
         },
