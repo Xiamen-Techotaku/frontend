@@ -101,8 +101,8 @@ export default {
                     { withCredentials: true }
                 );
                 alert("登入成功");
-                // 重新整理頁面讓 App 元件重新 fetch currentUser
-                window.location.reload();
+                // 登入成功後導到根目錄
+                this.$router.push("/");
             } catch (error) {
                 console.error("登入失敗：", error);
                 alert(
