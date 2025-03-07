@@ -93,6 +93,17 @@
 </template>
 
 <script>
+import { useHead } from "@vueuse/head";
+
+useHead({
+    title: import.meta.env.VITE_SHOP_NAME,
+    meta: [
+        { name: "description", content: import.meta.env.VITE_OG_DESCRIPTION },
+        { property: "og:title", content: import.meta.env.VITE_SHOP_NAME },
+        { property: "og:description", content: import.meta.env.VITE_OG_DESCRIPTION },
+    ],
+});
+
 import axios from "axios";
 export default {
     name: "App",
