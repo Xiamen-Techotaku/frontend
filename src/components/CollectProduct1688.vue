@@ -84,7 +84,7 @@
                         </div>
                         <div class="mt-2">
                             <strong>主圖：</strong>
-                            <v-img :src="collectedData.image_url" max-width="200" />
+                            <BaseImage :src="collectedData.image_url" max-width="200" />
                         </div>
                         <div
                             class="mt-2"
@@ -97,7 +97,7 @@
                                     :key="index"
                                     cols="3"
                                 >
-                                    <v-img :src="img.image_url" max-width="100" />
+                                    <BaseImage :src="img.image_url" max-width="100" />
                                     <v-btn
                                         color="error"
                                         small

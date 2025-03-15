@@ -60,7 +60,7 @@
                                     cols="12"
                                     sm="4"
                                 >
-                                    <v-img :src="img" aspect-ratio="1" class="mb-2"></v-img>
+                                    <BaseImage :src="img" aspect-ratio="1" class="mb-2"></BaseImage>
                                     <v-row dense>
                                         <v-col cols="6">
                                             <v-btn

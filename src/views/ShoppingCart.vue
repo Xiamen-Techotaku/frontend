@@ -34,7 +34,7 @@
                                     <tr v-for="(item, index) in cartItems" :key="item.id">
                                         <!-- 圖片 -->
                                         <td class="text-center">
-                                            <v-img
+                                            <BaseImage
                                                 :src="
                                                     getProductMainImage(item.product) ||
                                                     fallbackImage
@@ -42,7 +42,7 @@
                                                 max-width="80"
                                                 max-height="80"
                                                 contain
-                                            ></v-img>
+                                            ></BaseImage>
                                         </td>
                                         <!-- 名稱 -->
                                         <td class="text-center">{{ item.product.name }}</td>

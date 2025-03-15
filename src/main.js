@@ -3,6 +3,7 @@ import { createHead } from "@vueuse/head";
 import App from "./App.vue";
 import router from "./router"; // 引入 router
 import vuetify from "./plugins/vuetify.js";
+import BaseImage from "./components/BaseImage.vue";
 
 const app = createApp(App); // 建立 app 實例
 const head = createHead();
@@ -11,6 +12,7 @@ const head = createHead();
 app.config.globalProperties.$backendUrl = import.meta.env.VITE_BACKEND_URL;
 document.title = import.meta.env.VITE_SHOP_NAME;
 app.use(router) // 使用 router
+    .component("BaseImage", BaseImage)
     .use(head)
     .use(vuetify)
     .mount("#app");

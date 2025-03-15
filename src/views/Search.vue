@@ -3,8 +3,7 @@
         <v-container>
             <v-row justify="center">
                 <v-col cols="12" class="text-center">
-                    <h1 v-if="!categoryId">商品列表</h1>
-                    <h1 v-else>分類【{{ getCategoryName(categoryId) }}】商品列表</h1>
+                    <h1>搜尋結果：{{ searchQuery }}</h1>
                 </v-col>
             </v-row>
             <v-row v-if="loading">
@@ -35,41 +34,31 @@
 <script>
 import axios from "axios";
 export default {
-    name: "Product",
+    name: "Search",
     data() {
         return {
             products: [],
             loading: true,
-            categories: [],
             placeholderImage: "https://via.placeholder.com/200?text=No+Image",
         };
     },
     computed: {
-        // 讀取路由中的 category id
-        categoryId() {
-            return this.$route.params.id || null;
+        // 從路由 query 取得搜尋關鍵字
+        searchQuery() {
+            return this.$route.query.q || "";
         },
     },
     methods: {
-        async fetchCategories() {
-            try {
-                const response = await axios.get(`${this.$backendUrl}/api/categories`);
-                this.categories = response.data.categories;
-            } catch (error) {
-                console.error("取得分類資料失敗:", error);
-                this.categories = [];
-            }
-        },
         async fetchProducts() {
             try {
-                console.log(this.$backendUrl)
-                const url = this.categoryId
-                    ? `${this.$backendUrl}/api/products?category_id=${this.categoryId}`
-                    : `${this.$backendUrl}/api/products`;
+                // 依搜尋關鍵字調用後端 API 取得搜尋結果
+                const url = `${this.$backendUrl}/api/products/search?q=${encodeURIComponent(
+                    this.searchQuery
+                )}`;
                 const response = await axios.get(url);
                 this.products = response.data.products;
             } catch (error) {
-                console.error("取得商品資料失敗：", error);
+                console.error("取得搜尋結果失敗：", error);
             } finally {
                 this.loading = false;
             }
@@ -84,22 +73,12 @@ export default {
         viewProduct(productId) {
             this.$router.push(`/product/${productId}`);
         },
-        getCategoryName(categoryId) {
-            const cat = this.categories.find((c) => c.id == categoryId);
-            return cat ? cat.name : "";
-        },
     },
     mounted() {
-        if (this.categoryId) {
-            this.fetchCategories().then(() => {
-                this.fetchProducts();
-            });
-        } else {
-            this.fetchProducts();
-        }
+        this.fetchProducts();
     },
     watch: {
-        "$route.params.id"(newVal, oldVal) {
+        "$route.query.q"(newVal, oldVal) {
             this.loading = true;
             this.fetchProducts();
         },

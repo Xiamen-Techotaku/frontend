@@ -59,12 +59,12 @@
                             class="elevation-1"
                         >
                             <template #item.productImage="{ item }">
-                                <v-img
+                                <BaseImage
                                     :src="item.productImage"
                                     width="150"
                                     height="150"
                                     contain
-                                ></v-img>
+                                ></BaseImage>
                             </template>
                             <template #item.productName="{ item }">
                                 {{ item.productName }}

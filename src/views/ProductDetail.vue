@@ -13,11 +13,11 @@
                         hide-delimiters
                     >
                         <v-carousel-item v-for="(img, index) in product.images" :key="index">
-                            <v-img
+                            <BaseImage
                                 :src="img.image_url"
                                 :alt="product.name"
                                 class="fill-height"
-                            ></v-img>
+                            ></BaseImage>
                         </v-carousel-item>
                     </v-carousel>
                     <v-skeleton-loader v-else type="image"></v-skeleton-loader>

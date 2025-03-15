@@ -13,6 +13,7 @@ import Profile from "../views/Profile.vue";
 import Orders from "../views/Orders.vue";
 import OrderDetail from "../views/OrderDetail.vue";
 import AdminDashboard from "../views/AdminDashboard.vue";
+import Search from "../views/Search.vue";
 
 const routes = [
     { path: "/", name: "Home", component: Home },
@@ -29,6 +30,7 @@ const routes = [
     { path: "/orders", name: "Orders", component: Orders },
     { path: "/order/:id", name: "OrderDetail", component: OrderDetail },
     { path: "/admin", name: "AdminDashboard", component: AdminDashboard },
+    { path: "/search", name: "Search", component: Search },
 ];
 
 const router = createRouter({

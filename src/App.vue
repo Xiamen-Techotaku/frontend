@@ -1,9 +1,29 @@
 <template>
     <v-app>
+        <!-- 全局 Loading 進度條 -->
+        <v-progress-linear
+            v-if="globalLoading"
+            indeterminate
+            color="primary"
+            height="4"
+        ></v-progress-linear>
+
+        <!-- Header 區塊 -->
         <v-app-bar app :color="primaryColor" dark>
             <v-toolbar-title>
                 <router-link to="/" class="shop-name-link">{{ shopName }}</router-link>
             </v-toolbar-title>
+            <!-- 新增搜尋商品輸入框 -->
+            <v-text-field
+                v-model="searchQuery"
+                append-icon="mdi-magnify"
+                label="搜尋商品"
+                single-line
+                hide-details
+                class="mx-4"
+                @keyup.enter="searchProducts"
+                @click:append="searchProducts"
+            ></v-text-field>
             <v-spacer></v-spacer>
             <div v-if="!currentUser">
                 <v-btn text to="/login">
@@ -69,15 +89,19 @@
             </v-container>
         </v-app-bar>
 
-        <!-- 主要內容 -->
+        <!-- 主要內容，包覆於 transition 中 -->
         <v-main class="main-content">
-            <router-view></router-view>
+            <transition name="fade">
+                <router-view v-if="!globalLoading"></router-view>
+            </transition>
         </v-main>
 
         <!-- Footer -->
         <v-footer :color="primaryColor" dark>
             <v-col class="text-center"> &copy; 2025 {{ shopName }}. All rights reserved. </v-col>
         </v-footer>
+
+        <!-- 右下角浮動對話按鈕 -->
         <v-fab
             :absolute="false"
             :app="true"
@@ -88,13 +112,14 @@
             variant="flat"
             @click="openChat"
         ></v-fab>
-        <!-- 右下角固定浮動對話按鈕 -->
     </v-app>
 </template>
 
 <script>
 import { useHead } from "@vueuse/head";
+import axios from "axios";
 
+// 使用 vueuse/head 設置 head 資訊
 useHead({
     title: import.meta.env.VITE_SHOP_NAME,
     meta: [
@@ -104,18 +129,17 @@ useHead({
     ],
 });
 
-import axios from "axios";
 export default {
     name: "App",
     data() {
-        /**
-         * @type {Array<{ id: number|string, parent_id?: number|string|null, name: string }>}
-         */
         return {
+            globalLoading: false, // 全局 loading 狀態
             currentUser: null,
             cartCount: 0,
             categories: [],
             shopName: import.meta.env.VITE_SHOP_NAME || "ShopName",
+            searchQuery: "",
+            cartCountInterval: null,
         };
     },
     computed: {
@@ -131,7 +155,6 @@ export default {
         topCategories() {
             return this.categories.filter((cat) => !cat.parent_id || cat.parent_id === "");
         },
-        // 從環境變數中讀取對話網址
         chatUrl() {
             return import.meta.env.VITE_CHAT_URL || "https://default-chat-url.com";
         },
@@ -182,18 +205,37 @@ export default {
             }
         },
         openChat() {
-            // 以新視窗開啟對話網址
             window.open(this.chatUrl, "_blank");
+        },
+        searchProducts() {
+            if (this.searchQuery.trim() !== "") {
+                this.$router.push({ path: "/search", query: { q: this.searchQuery } });
+            }
+        },
+        startGlobalLoading() {
+            this.globalLoading = true;
+        },
+        stopGlobalLoading() {
+            this.globalLoading = false;
         },
     },
     async mounted() {
         await this.fetchCurrentUser();
-        // 只有使用者已登入時才刷新購物車
         if (this.currentUser) {
             this.fetchCartCount();
             this.cartCountInterval = setInterval(this.fetchCartCount, 3000);
         }
         this.fetchCategories();
+        // 設置 router 守衛，讓頁面切換時顯示全局 loading
+        this.$router.beforeEach((to, from, next) => {
+            this.startGlobalLoading();
+            next();
+        });
+        this.$router.afterEach(() => {
+            setTimeout(() => {
+                this.stopGlobalLoading();
+            }, 500);
+        });
     },
     unmounted() {
         if (this.cartCountInterval) {
@@ -207,7 +249,14 @@ export default {
 body {
     font-family: "Noto Sans TC", sans-serif;
 }
-
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
 .shop-name-link {
     text-decoration: none;
     color: inherit;
@@ -218,13 +267,12 @@ body {
     cursor: pointer;
 }
 .main-content {
-    padding-top: 130px; /* 調整此值以確保主要內容不被 Header 擋住 */
+    padding-top: 130px;
     padding-bottom: 30px;
 }
 .category-col {
     position: relative;
 }
-/* 右下角固定對話按鈕 */
 .chat-button {
     position: fixed;
     bottom: 16px;
