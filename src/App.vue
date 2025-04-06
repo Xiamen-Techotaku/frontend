@@ -119,21 +119,21 @@
 import { useHead } from "@vueuse/head";
 import axios from "axios";
 
-// 使用 vueuse/head 設置 head 資訊
-useHead({
-    title: import.meta.env.VITE_SHOP_NAME,
-    meta: [
-        { name: "description", content: import.meta.env.VITE_OG_DESCRIPTION },
-        { property: "og:title", content: import.meta.env.VITE_SHOP_NAME },
-        { property: "og:description", content: import.meta.env.VITE_OG_DESCRIPTION },
-    ],
-});
-
 export default {
     name: "App",
+    setup() {
+        useHead({
+            title: import.meta.env.VITE_SHOP_NAME,
+            meta: [
+                { name: "description", content: import.meta.env.VITE_OG_DESCRIPTION },
+                { property: "og:title", content: import.meta.env.VITE_SHOP_NAME },
+                { property: "og:description", content: import.meta.env.VITE_OG_DESCRIPTION },
+            ],
+        });
+    },
     data() {
         return {
-            globalLoading: false, // 全局 loading 狀態
+            globalLoading: false,
             currentUser: null,
             cartCount: 0,
             categories: [],
