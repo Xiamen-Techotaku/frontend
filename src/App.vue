@@ -126,6 +126,7 @@ export default {
             title: import.meta.env.VITE_SHOP_NAME,
             meta: [
                 { name: "description", content: import.meta.env.VITE_OG_DESCRIPTION },
+                { property: "og:url", content: import.meta.env.VITE_URL },
                 { property: "og:title", content: import.meta.env.VITE_SHOP_NAME },
                 { property: "og:description", content: import.meta.env.VITE_OG_DESCRIPTION },
             ],
