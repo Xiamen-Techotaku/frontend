@@ -160,137 +160,166 @@
     </v-app>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
-export default {
-    name: "ProductDetail",
-    data() {
-        return {
-            product: {
-                images: [],
-                specifications: [],
-                options: [],
-            },
-            loading: true,
-            selectedSpecId: null, // 保存規格 id
-            selectedOptions: {}, // 每個選項群只保存選中的 option id (例如：{ "尺碼": 12 })
-            orderQuantity: 1,
-            tab: "one", // 分頁控制，預設顯示商品內容
-            reviews: [], // 儲存評論資料
-        };
-    },
-    computed: {
-        selectedSpec() {
-            if (!this.product.specifications) return null;
-            return (
-                this.product.specifications.find((spec) => spec.id === this.selectedSpecId) || null
-            );
-        },
-        displayPrice() {
-            if (this.selectedSpec) {
-                return this.formatPrice(this.selectedSpec.price);
-            } else if (this.product.specifications && this.product.specifications.length) {
-                const prices = this.product.specifications.map((spec) => spec.price);
-                const minPrice = Math.min(...prices);
-                const maxPrice = Math.max(...prices);
-                return minPrice === maxPrice
-                    ? this.formatPrice(minPrice)
-                    : `${this.formatPrice(minPrice)} - ${this.formatPrice(maxPrice)}`;
-            } else {
-                return this.formatPrice(this.product.price);
-            }
-        },
-        optionGroups() {
-            const groups = {};
-            if (this.product.options && this.product.options.length) {
-                this.product.options.forEach((opt) => {
-                    // 假設每個 option 包含 id, option_name, option_value
-                    if (!groups[opt.option_name]) {
-                        groups[opt.option_name] = [];
-                    }
-                    groups[opt.option_name].push(opt);
-                });
-            }
-            return groups;
-        },
-    },
-    methods: {
-        formatPrice(value) {
-            return `$${Math.round(parseFloat(value))}`;
-        },
-        // 取得冒號後的文字，如果沒有冒號則直接回傳原字串
-        getDisplayText(text) {
-            if (text && text.includes(":")) {
-                return text.split(":")[1].trim();
-            }
-            return text;
-        },
-        async fetchProduct() {
-            const productId = this.$route.params.id;
-            try {
-                const response = await axios.get(`${this.$backendUrl}/api/products/${productId}`);
-                this.product = response.data.product;
-                // 取得該商品的評論資料
-                const reviewsResponse = await axios.get(`${this.$backendUrl}/api/reviews`, {
-                    params: { product_id: productId },
-                });
-                this.reviews = reviewsResponse.data.reviews || [];
-            } catch (error) {
-                console.error("取得商品資料失敗：", error);
-            } finally {
-                this.loading = false;
-                this.autoSelectSingle();
-            }
-        },
-        autoSelectSingle() {
-            // 如果有規格，預設選第一個
-            if (this.product.specifications && this.product.specifications.length > 0) {
-                this.selectedSpecId = this.product.specifications[0].id;
-            }
-            // 選項部分，對於每個選項群預設選第一個選項
-            for (const group in this.optionGroups) {
-                const values = this.optionGroups[group];
-                if (values.length > 0) {
-                    this.$set(this.selectedOptions, group, values[0].id);
-                }
-            }
-        },
-        goBack() {
-            this.$router.back();
-        },
-        async addToCart() {
-            try {
-                // 由於後端 carts 改為接收 optionId (單一選項)
-                // 若有多個選項群，這裡以第一個群組的選擇為準
-                let optionId = null;
-                const groups = Object.keys(this.selectedOptions);
-                if (groups.length > 0) {
-                    optionId = this.selectedOptions[groups[0]];
-                }
-                const payload = {
-                    productId: this.product.id, // 內部使用
-                    specificationId: this.selectedSpec ? this.selectedSpec.id : null,
-                    optionId, // 傳送選項的 id
-                    quantity: this.orderQuantity,
-                };
-                await axios.post(`${this.$backendUrl}/api/cart`, payload, {
-                    withCredentials: true,
-                });
-                alert("已加入購物車");
-            } catch (error) {
-                console.error("加入購物車失敗：", error);
-                alert("加入購物車失敗，請稍後再試");
-            }
-        },
-        async buyNow() {
-            await this.addToCart();
-            this.$router.push("/checkout");
-        },
-    },
-    mounted() {
-        this.fetchProduct();
-    },
+import { useHead } from "@vueuse/head";
+
+const route = useRoute();
+const router = useRouter();
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+const product = ref({
+    images: [],
+    specifications: [],
+    options: [],
+});
+const loading = ref(true);
+const selectedSpecId = ref(null);
+const selectedOptions = ref({});
+const orderQuantity = ref(1);
+const tab = ref("one");
+const reviews = ref([]);
+
+// 取得商品資料
+const fetchProduct = async () => {
+    const productId = route.params.id;
+    try {
+        const response = await axios.get(`${backendUrl}/api/products/${productId}`);
+        product.value = response.data.product;
+        const reviewsResponse = await axios.get(`${backendUrl}/api/reviews`, {
+            params: { product_id: productId },
+        });
+        reviews.value = reviewsResponse.data.reviews || [];
+    } catch (error) {
+        console.error("取得商品資料失敗：", error);
+    } finally {
+        loading.value = false;
+        autoSelectSingle();
+    }
 };
+
+const autoSelectSingle = () => {
+    if (product.value.specifications && product.value.specifications.length > 0) {
+        selectedSpecId.value = product.value.specifications[0].id;
+    }
+    // 對於每個選項群預設選第一個
+    (product.value.options || []).forEach((opt) => {
+        if (!selectedOptions.value[opt.option_name]) {
+            selectedOptions.value[opt.option_name] = opt.id;
+        }
+    });
+};
+
+onMounted(() => {
+    fetchProduct();
+});
+
+const goBack = () => {
+    router.back();
+};
+
+const addToCart = async () => {
+    try {
+        let optionId = null;
+        const groups = Object.keys(selectedOptions.value);
+        if (groups.length > 0) {
+            optionId = selectedOptions.value[groups[0]];
+        }
+        const payload = {
+            productId: product.value.id,
+            specificationId: selectedSpec.value ? selectedSpec.value.id : null,
+            optionId,
+            quantity: orderQuantity.value,
+        };
+        await axios.post(`${backendUrl}/api/cart`, payload, {
+            withCredentials: true,
+        });
+        alert("已加入購物車");
+    } catch (error) {
+        console.error("加入購物車失敗：", error);
+        alert("加入購物車失敗，請稍後再試");
+    }
+};
+
+const buyNow = async () => {
+    await addToCart();
+    router.push("/checkout");
+};
+
+const formatPrice = (value) => {
+    return `$${Math.round(parseFloat(value))}`;
+};
+
+const getDisplayText = (text) => {
+    if (text && text.includes(":")) {
+        return text.split(":")[1].trim();
+    }
+    return text;
+};
+
+const selectedSpec = computed(() => {
+    if (!product.value.specifications) return null;
+    return product.value.specifications.find((spec) => spec.id === selectedSpecId.value) || null;
+});
+
+const displayPrice = computed(() => {
+    if (selectedSpec.value) {
+        return formatPrice(selectedSpec.value.price);
+    } else if (product.value.specifications && product.value.specifications.length) {
+        const prices = product.value.specifications.map((spec) => spec.price);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        return minPrice === maxPrice
+            ? formatPrice(minPrice)
+            : `${formatPrice(minPrice)} - ${formatPrice(maxPrice)}`;
+    } else {
+        return formatPrice(product.value.price);
+    }
+});
+
+const optionGroups = computed(() => {
+    const groups = {};
+    if (product.value.options && product.value.options.length) {
+        product.value.options.forEach((opt) => {
+            if (!groups[opt.option_name]) {
+                groups[opt.option_name] = [];
+            }
+            groups[opt.option_name].push(opt);
+        });
+    }
+    return groups;
+});
+
+// 設定該頁面的 OG meta 標籤
+function stripHtml(html) {
+    return html.replace(/<[^>]+>/g, "").trim();
+}
+
+const pageTitle = computed(() => {
+    return product.value.name || "商品詳情";
+});
+const pageDescription = computed(() => {
+    return product.value.description
+        ? stripHtml(product.value.description.substring(0, 160))
+        : "商品詳情";
+});
+const pageImage = computed(() => {
+    return product.value.images && product.value.images.length
+        ? product.value.images[0].image_url
+        : "https://via.placeholder.com/200?text=No+Image";
+});
+
+useHead({
+    title: pageTitle,
+    meta: [
+        { name: "description", content: pageDescription },
+        { property: "og:title", content: pageTitle },
+        { property: "og:description", content: pageDescription },
+        { property: "og:image", content: pageImage },
+    ],
+});
 </script>
 
 <style scoped>

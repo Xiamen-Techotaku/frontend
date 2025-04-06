@@ -41,8 +41,33 @@
 
 <script>
 import axios from "axios";
+import { useHead } from "@vueuse/head";
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
 export default {
     name: "Product",
+    setup() {
+        const route = useRoute();
+        // 讀取路由中的 category id
+        const categoryId = computed(() => route.params.id || null);
+        // 根據是否有 categoryId 來決定頁面標題
+        const pageTitle = computed(() =>
+            categoryId.value ? `分類： ${categoryId.value}` : "商品列表"
+        );
+        // 使用 useHead 動態設定 meta 與 OG 標籤
+        useHead({
+            title: pageTitle,
+            meta: [
+                { name: "description", content: computed(() => pageTitle.value + "，歡迎選購！") },
+                { property: "og:title", content: pageTitle },
+                {
+                    property: "og:description",
+                    content: computed(() => pageTitle.value + "，歡迎選購！"),
+                },
+            ],
+        });
+    },
     data() {
         return {
             products: [],

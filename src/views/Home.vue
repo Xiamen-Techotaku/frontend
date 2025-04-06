@@ -22,8 +22,15 @@
             <v-row>
                 <v-col v-for="product in products" :key="product.id" cols="12" sm="6" md="4" lg="3">
                     <v-card class="mx-auto" max-width="300" outlined>
-                        <BaseImage :src="product.image_url || placeholderImage" height="200px"></BaseImage>
-                        <v-card-title>{{ product.name }}</v-card-title>
+                        <BaseImage
+                            :src="product.image_url || placeholderImage"
+                            height="200px"
+                        ></BaseImage>
+                        <v-tooltip :text="product.name" open-delay="500">
+                            <template v-slot:activator="{ props }">
+                                <v-card-title v-bind="props">{{ product.name }}</v-card-title>
+                            </template>
+                        </v-tooltip>
                         <v-card-text>
                             <div class="mb-2">{{ product.description }}</div>
                             <div class="price font-weight-bold">
