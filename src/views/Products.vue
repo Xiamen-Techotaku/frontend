@@ -4,7 +4,7 @@
             <v-row justify="center">
                 <v-col cols="12" class="text-center">
                     <h1 v-if="!categoryId">商品列表</h1>
-                    <h1 v-else>分類【{{ getCategoryName(categoryId) }}】商品列表</h1>
+                    <h1 v-else>{{ getCategoryName(categoryId) }}</h1>
                 </v-col>
             </v-row>
             <v-row v-if="loading">
