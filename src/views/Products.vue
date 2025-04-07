@@ -39,104 +39,114 @@
     </v-app>
 </template>
 
-<script>
+<script setup>
+import { ref, computed, onMounted, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 import { useHead } from "@vueuse/head";
-import { ref, computed, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
 
-export default {
-    name: "Product",
-    setup() {
-        const route = useRoute();
-        // 讀取路由中的 category id
-        const categoryId = computed(() => route.params.id || null);
-        // 根據是否有 categoryId 來決定頁面標題
-        const pageTitle = computed(() =>
-            categoryId.value ? `分類： ${categoryId.value}` : "商品列表"
-        );
-        // 使用 useHead 動態設定 meta 與 OG 標籤
-        useHead({
-            title: pageTitle,
-            meta: [
-                { name: "description", content: computed(() => pageTitle.value + "，歡迎選購！") },
-                { property: "og:title", content: pageTitle },
-                {
-                    property: "og:description",
-                    content: computed(() => pageTitle.value + "，歡迎選購！"),
-                },
-            ],
-        });
-    },
-    data() {
-        return {
-            products: [],
-            loading: true,
-            categories: [],
-            placeholderImage: "https://via.placeholder.com/200?text=No+Image",
-        };
-    },
-    computed: {
-        // 讀取路由中的 category id
-        categoryId() {
-            return this.$route.params.id || null;
-        },
-    },
-    methods: {
-        async fetchCategories() {
-            try {
-                const response = await axios.get(`${this.$backendUrl}/api/categories`);
-                this.categories = response.data.categories;
-            } catch (error) {
-                console.error("取得分類資料失敗:", error);
-                this.categories = [];
-            }
-        },
-        async fetchProducts() {
-            try {
-                console.log(this.$backendUrl);
-                const url = this.categoryId
-                    ? `${this.$backendUrl}/api/products?category_id=${this.categoryId}`
-                    : `${this.$backendUrl}/api/products`;
-                const response = await axios.get(url);
-                this.products = response.data.products;
-            } catch (error) {
-                console.error("取得商品資料失敗：", error);
-            } finally {
-                this.loading = false;
-            }
-        },
-        displayPrice(product) {
-            if (product.spec_price) {
-                return product.spec_price;
-            } else {
-                return `$${product.price}`;
-            }
-        },
-        viewProduct(productId) {
-            this.$router.push(`/product/${productId}`);
-        },
-        getCategoryName(categoryId) {
-            const cat = this.categories.find((c) => c.id == categoryId);
-            return cat ? cat.name : "";
-        },
-    },
-    mounted() {
-        if (this.categoryId) {
-            this.fetchCategories().then(() => {
-                this.fetchProducts();
-            });
-        } else {
-            this.fetchProducts();
-        }
-    },
-    watch: {
-        "$route.params.id"(newVal, oldVal) {
-            this.loading = true;
-            this.fetchProducts();
-        },
-    },
+// 從環境變數取得後端 API 的 URL
+const backendUrl = import.meta.env.VITE_BACKEND_URL;
+
+// 路由與 Router
+const route = useRoute();
+const router = useRouter();
+
+// 商品、分類、loading 狀態等
+const products = ref([]);
+const categories = ref([]);
+const loading = ref(true);
+const placeholderImage = "https://via.placeholder.com/200?text=No+Image";
+
+// 從路由參數取得 category id
+const categoryId = computed(() => route.params.id || null);
+
+// 在 setup 中定義 getCategoryName 函數
+const getCategoryName = (id) => {
+    const cat = categories.value.find((c) => c.id == id);
+    return cat ? cat.name : "";
 };
+
+// 設定頁面標題，若有分類則顯示分類名稱，否則顯示 "商品列表"
+const pageTitle = computed(() =>
+    categoryId.value ? getCategoryName(categoryId.value) : "商品列表"
+);
+
+// 使用 vueuse/head 設定 meta 與 OG 標籤
+useHead({
+    title: pageTitle,
+    meta: [
+        {
+            name: "description",
+            content: computed(() => pageTitle.value + "，歡迎選購！"),
+        },
+        {
+            property: "og:title",
+            content: pageTitle,
+        },
+        {
+            property: "og:description",
+            content: computed(() => pageTitle.value + "，歡迎選購！"),
+        },
+    ],
+});
+
+// 取得分類資料
+const fetchCategories = async () => {
+    try {
+        const response = await axios.get(`${backendUrl}/api/categories`);
+        categories.value = response.data.categories;
+    } catch (error) {
+        console.error("取得分類資料失敗:", error);
+        categories.value = [];
+    }
+};
+
+// 取得商品資料
+const fetchProducts = async () => {
+    try {
+        const url = categoryId.value
+            ? `${backendUrl}/api/products?category_id=${categoryId.value}`
+            : `${backendUrl}/api/products`;
+        const response = await axios.get(url);
+        products.value = response.data.products;
+    } catch (error) {
+        console.error("取得商品資料失敗：", error);
+    } finally {
+        loading.value = false;
+    }
+};
+
+// 顯示價格的函數
+const displayPrice = (product) => {
+    if (product.spec_price) {
+        return product.spec_price;
+    } else {
+        return `$${product.price}`;
+    }
+};
+
+// 跳轉到商品詳情頁面
+const viewProduct = (productId) => {
+    router.push(`/product/${productId}`);
+};
+
+// 初次掛載時，如果有 categoryId 則先抓分類資料，再抓商品資料
+onMounted(async () => {
+    if (categoryId.value) {
+        await fetchCategories();
+    }
+    await fetchProducts();
+});
+
+// 監控路由變化，重新載入商品資料
+watch(
+    () => route.params.id,
+    async (newVal, oldVal) => {
+        loading.value = true;
+        await fetchProducts();
+    }
+);
 </script>
 
 <style scoped>
