@@ -69,7 +69,9 @@ const getCategoryName = (id) => {
 
 // 設定頁面標題，若有分類則顯示分類名稱，否則顯示 "商品列表"
 const pageTitle = computed(() =>
-    categoryId.value ? getCategoryName(categoryId.value) : "商品列表"
+    categoryId.value
+        ? import.meta.env.VITE_SHOP_NAME + "-" + getCategoryName(categoryId.value)
+        : "商品列表"
 );
 
 // 使用 vueuse/head 設定 meta 與 OG 標籤

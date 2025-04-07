@@ -298,7 +298,7 @@ function stripHtml(html) {
 }
 
 const pageTitle = computed(() => {
-    return product.value.name || "商品詳情";
+    return import.meta.env.VITE_SHOP_NAME + "-" + product.value.name || "商品詳情";
 });
 const pageDescription = computed(() => {
     return product.value.description
